@@ -1,0 +1,39 @@
+name: Build MCNovaServerLauncher
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+
+    strategy:
+      matrix:
+        os:
+          - windows-latest
+          - macos-latest
+          - ubuntu-latest
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Frontend
+        working-directory: frontend
+        run: npm install
+
+      - name: Build Backend
+        working-directory: backend
+        run: ./gradlew bootJar
+        shell: bash
+
+      - name: Build Electron
+        working-directory: frontend
+        run: npm run release

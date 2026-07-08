@@ -1,0 +1,109 @@
+###################################
+# Gradle
+###################################
+
+.gradle/
+build/
+
+# Keep Gradle wrapper
+!gradle/wrapper/gradle-wrapper.jar
+
+# Ignore generated builds
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+.kotlin/
+
+
+###################################
+# Java / Backend
+###################################
+
+*.class
+
+# Gradle output
+backend/build/
+backend/target/
+
+# Logs
+*.log
+
+
+###################################
+# IntelliJ IDEA
+###################################
+
+.idea/
+*.iml
+*.iws
+*.ipr
+
+out/
+
+
+###################################
+# Eclipse
+###################################
+
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+
+
+###################################
+# VS Code
+###################################
+
+.vscode/
+
+
+###################################
+# Frontend Node
+###################################
+
+node_modules/
+
+frontend/node_modules/
+
+# Vite
+frontend/dist/
+
+# Electron build
+frontend/release/
+
+
+###################################
+# Electron packages
+###################################
+
+*.app
+*.dmg
+*.exe
+
+
+###################################
+# Java Runtime
+###################################
+
+runtime/
+
+
+###################################
+# OS
+###################################
+
+.DS_Store
+
+
+###################################
+# Temporary
+###################################
+
+*.tmp
+*.temp
+*.swp

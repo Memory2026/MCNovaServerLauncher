@@ -1,0 +1,52 @@
+appId: com.xingci.mcnova
+
+productName: MCNova Server Launcher
+
+directories:
+  output: release
+
+files:
+  - dist/**
+  - dist-electron/**
+  - package.json
+
+extraResources:
+  - from: ../backend/build/libs/backend-1.0.0.jar
+    to: backend/backend-1.0.0.jar
+
+  - from: ../runtime
+    to: runtime
+
+asar: true
+
+compression: maximum
+
+mac:
+  target:
+    - dmg
+
+  category: public.app-category.utilities
+
+  icon: build/icon.icns
+
+win:
+  target:
+    - nsis
+
+  icon: build/icon.ico
+
+linux:
+  target:
+    - AppImage
+
+  icon: build/icon.png
+
+nsis:
+  oneClick: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: MCNova Server Launcher
+
+publish: null

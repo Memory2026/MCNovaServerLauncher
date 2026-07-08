@@ -1,0 +1,8 @@
+*{
+  transition:
+    background .2s,
+    color .2s,
+    border-color .2s,
+    transform .2s,
+    opacity .2s;
+}

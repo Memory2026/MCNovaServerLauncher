@@ -1,0 +1,30 @@
+:root {
+
+  /* 品牌色 */
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+
+  /* 状态色 */
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+
+  /* 背景 */
+  --background: #f6f8fb;
+  --surface: #ffffff;
+  --sidebar: #ffffff;
+
+  /* 字体 */
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+
+  /* 边框 */
+  --border: #e5e7eb;
+
+  /* 阴影 */
+  --shadow:
+    0 10px 30px rgba(0,0,0,.08);
+
+  /* 圆角 */
+  --radius: 16px;
+}
