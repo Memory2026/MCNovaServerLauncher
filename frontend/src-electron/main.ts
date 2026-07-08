@@ -63,22 +63,38 @@ function getJavaPath(): string {
 }
 
 function getJarPath(): string {
-
   if (isDev) {
-
     return path.resolve(
       __dirname,
-      "../../backend/build/libs/backend-1.0.0.jar"
-    );
 
+      '../../backend/build/libs/backend-1.0.0.jar',
+    )
+  }
+
+  const backendDir = path.join(
+    process.resourcesPath,
+
+    'backend',
+  )
+
+  if (!fs.existsSync(backendDir)) {
+    throw new Error('找不到 backend 目录：' + backendDir)
+  }
+
+  const jar = fs
+    .readdirSync(backendDir)
+
+    .find((file) => file.endsWith('.jar'))
+
+  if (!jar) {
+    throw new Error('backend 目录没有 jar 文件')
   }
 
   return path.join(
-    process.resourcesPath,
-    "backend",
-    "backend.jar"
-  );
+    backendDir,
 
+    jar,
+  )
 }
 
 async function waitBackend(port = 8080): Promise<void> {
