@@ -1,101 +1,256 @@
 package com.xingci.mcnsl.manager.java;
 
+
 import com.xingci.mcnsl.model.JavaInfo;
 import org.springframework.stereotype.Component;
 
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/**
- * Java 环境验证器
- *
- * 负责：
- * 1. 判断目录是否为 Java Home
- * 2. 判断 JDK / JRE
- * 3. 获取 java、javac 可执行文件
- */
+
+
 @Component
 public class JavaValidator {
 
+
     /**
      * 验证 Java Home
-     *
-     * @param javaHome Java Home
-     * @return JavaInfo，不合法返回 null
      */
     public JavaInfo validate(Path javaHome) {
 
-        if (javaHome == null) {
+
+        if (javaHome == null ||
+                !Files.exists(javaHome) ||
+                !Files.isDirectory(javaHome)) {
+
             return null;
+
         }
 
-        if (!Files.exists(javaHome)) {
-            return null;
-        }
-
-        if (!Files.isDirectory(javaHome)) {
-            return null;
-        }
 
         boolean windows =
                 System.getProperty("os.name")
                         .toLowerCase()
                         .contains("win");
 
+
+
         Path javaExecutable =
                 javaHome.resolve("bin")
-                        .resolve(windows ? "java.exe" : "java");
+                        .resolve(
+                                windows
+                                        ? "java.exe"
+                                        : "java"
+                        );
+
 
         if (!Files.exists(javaExecutable)) {
+
             return null;
+
         }
 
-        Path release =
-                javaHome.resolve("release");
 
-        if (!Files.exists(release)) {
-            return null;
-        }
 
         Path javacExecutable =
                 javaHome.resolve("bin")
-                        .resolve(windows ? "javac.exe" : "javac");
+                        .resolve(
+                                windows
+                                        ? "javac.exe"
+                                        : "javac"
+                        );
+
+
 
         JavaInfo info = new JavaInfo();
 
-        info.setPath(javaHome.toString());
+
+
+        info.setPath(
+                javaHome
+                        .toAbsolutePath()
+                        .toString()
+        );
+
 
         info.setJavaExecutable(
-                javaExecutable.toAbsolutePath().toString());
+                javaExecutable
+                        .toAbsolutePath()
+                        .toString()
+        );
 
-        if (Files.exists(javacExecutable)) {
+
+
+        if(Files.exists(javacExecutable)){
+
 
             info.setJavacExecutable(
-                    javacExecutable.toAbsolutePath().toString());
+                    javacExecutable
+                            .toAbsolutePath()
+                            .toString()
+            );
+
 
             info.setJdk(true);
 
-        } else {
+
+        }else{
+
 
             info.setJdk(false);
 
         }
 
-        String currentHome =
-                System.getProperty("java.home");
 
-        if (currentHome != null &&
-                javaHome.toAbsolutePath()
-                        .normalize()
-                        .equals(Path.of(currentHome)
-                                .toAbsolutePath()
-                                .normalize())) {
 
-            info.setCurrent(true);
+        /*
+         * 获取 Java 版本
+         */
+        try {
+
+
+            Process process =
+                    new ProcessBuilder(
+                            javaExecutable.toString(),
+                            "-version"
+                    )
+                            .redirectErrorStream(true)
+                            .start();
+
+
+
+            BufferedReader reader =
+                    new BufferedReader(
+                            new InputStreamReader(
+                                    process.getInputStream()
+                            )
+                    );
+
+
+            String versionLine = null;
+
+
+            String line;
+
+
+            while((line = reader.readLine()) != null){
+
+
+                if(line.contains("version")){
+
+                    versionLine = line;
+
+                    break;
+
+                }
+
+            }
+
+
+            process.waitFor();
+
+
+
+            if(versionLine != null){
+
+
+                /*
+                 * 示例:
+                 *
+                 * java version "21.0.11" 2026-04-21 LTS
+                 *
+                 */
+
+
+                String version =
+                        versionLine
+                                .replace("\"","")
+                                .trim();
+
+
+
+                info.setVersion(version);
+
+
+
+                String major;
+
+
+                if(version.startsWith("1.8")){
+
+                    major = "8";
+
+                }
+                else {
+
+
+                    major =
+                            version
+                                    .split("\\.")[0];
+
+                }
+
+
+
+                info.setName(
+                        "Java " + major
+                );
+
+
+            }
+
+
+        }catch(Exception e){
+
+
+            info.setName(
+                    "Java"
+            );
+
+
+            info.setVersion(
+                    "Unknown"
+            );
 
         }
 
+
+
+
+        /*
+         * 判断当前 Java
+         */
+        String currentHome =
+                System.getProperty("java.home");
+
+
+
+        if(currentHome != null){
+
+
+            if(javaHome
+                    .toAbsolutePath()
+                    .normalize()
+                    .equals(
+                            Path.of(currentHome)
+                                    .toAbsolutePath()
+                                    .normalize()
+                    )){
+
+
+                info.setCurrent(true);
+
+            }
+
+        }
+
+
+
         return info;
+
     }
 
 }

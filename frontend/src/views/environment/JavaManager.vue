@@ -1,7 +1,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 
-const API_BASE = 'http://localhost:8080'
+/**
+ * 后端地址
+ *
+ * 开发:
+ * localhost:8080
+ *
+ * 打包:
+ * Electron 内置 Spring Boot
+ */
+const API_BASE = import.meta.env.DEV ? 'http://localhost:8080' : 'http://127.0.0.1:8080'
 
 interface JavaInfo {
   name: string
@@ -20,15 +29,48 @@ const isLoading = ref(false)
 const isDetecting = ref(false)
 
 /**
+ * 通用 HTTP 请求
+ */
+async function apiRequest(
+  url: string,
+
+  options?: RequestInit,
+) {
+  const controller = new AbortController()
+
+  const timeout = setTimeout(() => {
+    controller.abort()
+  }, 10000)
+
+  try {
+    const response = await fetch(
+      API_BASE + url,
+
+      {
+        ...options,
+
+        signal: controller.signal,
+      },
+    )
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+
+    return await response.json()
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+/**
  * 获取 Java 环境列表
  */
-const fetchJavaList = async () => {
+async function fetchJavaList() {
   isLoading.value = true
 
   try {
-    const response = await fetch(`${API_BASE}/api/java/list`)
-
-    const result = await response.json()
+    const result: any = await apiRequest('/api/java/list')
 
     if (result.code === 0 && result.data) {
       javaList.value = result.data
@@ -45,19 +87,17 @@ const fetchJavaList = async () => {
 /**
  * 自动检测系统 Java
  */
-const handleAutoDetect = async () => {
+async function handleAutoDetect() {
   isDetecting.value = true
 
   try {
-    const response = await fetch(
-      `${API_BASE}/api/java/detect`,
+    const result: any = await apiRequest(
+      '/api/java/detect',
 
       {
         method: 'POST',
       },
     )
-
-    const result = await response.json()
 
     if (result.code === 0) {
       await fetchJavaList()
@@ -66,7 +106,6 @@ const handleAutoDetect = async () => {
     }
   } catch (error) {
     console.error('连接后端失败:', error)
-
 
     alert('请求失败，请确保 MCNova 后端服务已正常启动')
   } finally {
@@ -92,58 +131,19 @@ onMounted(() => {
       <button
         @click="handleAutoDetect"
         :disabled="isDetecting"
-        class="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white font-medium px-4 py-2.5 rounded-xl shadow-md transition-all duration-200 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+        class="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-blue-600 text-white font-medium px-4 py-2.5 rounded-xl shadow-md transition-all text-sm disabled:opacity-60"
       >
-        <svg
-          v-if="isDetecting"
-          class="animate-spin h-4 w-4 text-white"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            class="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            stroke-width="4"
-          />
+        <span v-if="isDetecting"> 扫描中... </span>
 
-          <path
-            class="opacity-75"
-            fill="currentColor"
-            d="
-          M4 12a8 8 0 018-8V0
-          C5.373 0 0 5.373 0 12h4z
-          "
-          />
-        </svg>
-
-        <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="
-          M21 21l-6-6m2-5
-          a7 7 0 11-14 0
-          7 7 0 0114 0z
-          "
-          />
-        </svg>
-
-        {{ isDetecting ? '正在扫描系统环境...' : '自动检测系统 Java' }}
+        <span v-else> 自动检测系统 Java </span>
       </button>
     </div>
 
-    <div v-if="isLoading" class="py-8 text-center text-sm text-gray-400">
-      正在加载 Java 环境列表...
-    </div>
+    <div v-if="isLoading" class="py-8 text-center text-gray-400">正在加载 Java 环境列表...</div>
 
     <div
       v-else-if="javaList.length === 0"
-      class="py-8 text-center text-sm text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200"
+      class="py-8 text-center text-sm text-gray-400 bg-gray-50 rounded-xl border border-dashed"
     >
       暂无 Java 环境，请点击右上角自动检测
     </div>
@@ -152,36 +152,29 @@ onMounted(() => {
       <div
         v-for="(item, index) in javaList"
         :key="index"
-        class="p-4 bg-gray-50 rounded-xl border border-gray-150 flex justify-between items-center transition-all hover:border-gray-300"
+        class="p-4 bg-gray-50 rounded-xl border flex justify-between items-center"
       >
         <div>
-          <div class="font-medium text-gray-700 flex items-center gap-2">
-            {{ item.name || '未命名 Java 环境' }}
+          <div class="font-medium text-gray-700">
+            {{ item.name || '未命名 Java' }}
 
-            <span
-              v-if="item.version"
-              class="text-xs bg-gray-200 px-1.5 py-0.5 rounded text-gray-600"
-            >
+            <span v-if="item.version" class="text-xs bg-gray-200 px-2 py-1 rounded">
               v{{ item.version }}
             </span>
           </div>
 
-          <div class="text-xs text-gray-400 mt-1">
+          <div class="text-xs text-gray-400 mt-2">
             路径:
+
             {{ item.path }}
           </div>
         </div>
 
-        <span
-          v-if="item.current"
-          class="px-2 py-1 bg-green-50 text-green-600 text-xs rounded-md font-medium"
-        >
+        <span v-if="item.current" class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
           当前生效
         </span>
 
-        <button v-else class="text-xs text-blue-600 hover:underline font-medium">
-          切换到此版本
-        </button>
+        <button v-else class="text-xs text-blue-600">切换到此版本</button>
       </div>
     </div>
   </div>
