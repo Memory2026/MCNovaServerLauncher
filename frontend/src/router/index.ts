@@ -16,6 +16,8 @@ import ToolboxView from '@/views/toolbox/ToolboxView.vue'
 
 import Downloads from '@/views/downloads/DownloadsView.vue'
 
+import ResourceLibrary from '@/views/resourcelibrary/ResourceLibrary.vue'
+
 const router = createRouter({
   history: createWebHashHistory(),
 
@@ -90,6 +92,14 @@ const router = createRouter({
           name: 'downloads',
 
           component: Downloads,
+        },
+
+        {
+          path: 'resourcelibrary',
+
+          name: 'resourcelibrary',
+
+          component: ResourceLibrary,
         },
       ],
     },

@@ -126,7 +126,7 @@ const menuItems = [
   },
   {
     name: '资源库',
-    path: '/app/resources',
+    path: '/app/resourcelibrary',
     icon: new URL('@/assets/icons/ResourceLibrary.png', import.meta.url).href,
   },
   {
