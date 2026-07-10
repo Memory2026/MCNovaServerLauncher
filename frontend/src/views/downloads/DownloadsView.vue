@@ -238,9 +238,11 @@
           class="w-16 h-16 object-contain mb-2"
           alt="Version Big Icon"
         />
-        <h1 class="text-2xl font-bold text-gray-900">
-          {{ selectedVersion.versionId || selectedVersion.name }}
-        </h1>
+        <input
+          v-model="customVersionName"
+          class="text-2xl font-bold text-gray-900 text-center bg-transparent border-b border-gray-200/60 focus:border-zinc-800 focus:outline-none py-1 min-w-[200px] transition-colors"
+          placeholder="版本名称"
+        />
         <span class="text-xs text-gray-400 mt-0.5">{{ translateType(selectedVersion.type) }}</span>
       </div>
 
@@ -741,6 +743,7 @@ const currentView = ref('list')
 const selectedVersion = ref(null)
 const selectedLoader = ref('vanilla')
 const expandedLoader = ref('')
+const customVersionName = ref('')
 
 const allLoaderMap = reactive({ forge: [], neoforge: [], fabric: [], optifine: [] })
 const loaderSelectedVersions = reactive({ forge: '', neoforge: '', fabric: '', optifine: '' })
@@ -779,6 +782,7 @@ const enterDownloadDetail = async (version) => {
   selectedVersion.value = version
   selectedLoader.value = 'vanilla'
   expandedLoader.value = ''
+  customVersionName.value = version.versionId || version.name || ''
 
   const loaders = ['forge', 'neoforge', 'fabric', 'optifine']
   loaders.forEach((key) => {
@@ -851,6 +855,21 @@ const enterDownloadDetail = async (version) => {
 
 const handleLoaderSelect = (loaderType) => {
   selectedLoader.value = loaderType
+  const versionId = selectedVersion.value?.versionId || selectedVersion.value?.name || ''
+  if (!customVersionName.value || customVersionName.value.startsWith('Forge-') || 
+      customVersionName.value.startsWith('NeoForge-') || 
+      customVersionName.value.startsWith('Fabric-') || 
+      customVersionName.value.startsWith('OptiFine-') ||
+      customVersionName.value === versionId) {
+    const loaderPrefixMap = {
+      vanilla: '',
+      forge: 'Forge-',
+      neoforge: 'NeoForge-',
+      fabric: 'Fabric-',
+      optifine: 'OptiFine-',
+    }
+    customVersionName.value = `${loaderPrefixMap[loaderType] || ''}${versionId}`
+  }
   if (expandedLoader.value === loaderType) {
     expandedLoader.value = ''
   } else {
