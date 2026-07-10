@@ -23,13 +23,8 @@
 
     <div class="flex-1">
       <div v-if="currentTab === 'version'" class="space-y-4">
-        <header class="flex justify-between items-center mb-6">
+        <header class="mb-6">
           <h2 class="text-xl font-bold text-gray-900">版本资源</h2>
-          <button
-            class="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-sm font-medium shadow-sm transition-colors"
-          >
-            <span>📁</span> 导入版本
-          </button>
         </header>
         
         <div class="bg-white rounded-xl shadow-sm border border-gray-200/60 p-5">
@@ -37,20 +32,15 @@
           <div class="flex items-center justify-center h-40 text-gray-400">
             <div class="text-center">
               <div class="text-4xl mb-2">📦</div>
-              <div class="text-sm">点击上方按钮导入版本</div>
+              <div class="text-sm">暂无版本资源</div>
             </div>
           </div>
         </div>
       </div>
 
       <div v-else-if="currentTab === 'loader'" class="space-y-4">
-        <header class="flex justify-between items-center mb-6">
+        <header class="mb-6">
           <h2 class="text-xl font-bold text-gray-900">加载器资源</h2>
-          <button
-            class="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-sm font-medium shadow-sm transition-colors"
-          >
-            <span>📁</span> 导入加载器
-          </button>
         </header>
         
         <div class="bg-white rounded-xl shadow-sm border border-gray-200/60 p-5">
@@ -58,20 +48,15 @@
           <div class="flex items-center justify-center h-40 text-gray-400">
             <div class="text-center">
               <div class="text-4xl mb-2">⚙️</div>
-              <div class="text-sm">点击上方按钮导入加载器</div>
+              <div class="text-sm">暂无加载器资源</div>
             </div>
           </div>
         </div>
       </div>
 
       <div v-else-if="currentTab === 'platform'" class="space-y-4">
-        <header class="flex justify-between items-center mb-6">
+        <header class="mb-6">
           <h2 class="text-xl font-bold text-gray-900">平台资源</h2>
-          <button
-            class="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-sm font-medium shadow-sm transition-colors"
-          >
-            <span>📁</span> 导入平台
-          </button>
         </header>
         
         <div class="bg-white rounded-xl shadow-sm border border-gray-200/60 p-5">
@@ -79,7 +64,7 @@
           <div class="flex items-center justify-center h-40 text-gray-400">
             <div class="text-center">
               <div class="text-4xl mb-2">🌐</div>
-              <div class="text-sm">点击上方按钮导入平台</div>
+              <div class="text-sm">暂无平台资源</div>
             </div>
           </div>
         </div>
