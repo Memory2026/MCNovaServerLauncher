@@ -1,18 +1,21 @@
-import { app as t, BrowserWindow as u, ipcMain as f } from "electron";
-import o from "node:path";
-import c from "node:fs";
-import h from "node:net";
-import { spawn as j } from "node:child_process";
-import { fileURLToPath as v } from "node:url";
-const g = v(import.meta.url), l = o.dirname(g);
-let a = null, i = null;
-const d = !t.isPackaged;
-function k() {
-  if (d)
+import { app, BrowserWindow, ipcMain } from "electron";
+import path from "node:path";
+import fs from "node:fs";
+import net from "node:net";
+import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+const __filename$1 = fileURLToPath(import.meta.url);
+const __dirname$1 = path.dirname(__filename$1);
+let mainWindow = null;
+let backendProcess = null;
+const isDev = !app.isPackaged;
+function getJavaPath() {
+  if (isDev) {
     return process.platform === "win32" ? "java" : "/usr/bin/java";
+  }
   switch (process.platform) {
     case "darwin":
-      return o.join(
+      return path.join(
         process.resourcesPath,
         "runtime",
         "mac",
@@ -23,7 +26,7 @@ function k() {
         "java"
       );
     case "win32":
-      return o.join(
+      return path.join(
         process.resourcesPath,
         "runtime",
         "windows",
@@ -32,7 +35,7 @@ function k() {
         "java.exe"
       );
     default:
-      return o.join(
+      return path.join(
         process.resourcesPath,
         "runtime",
         "linux",
@@ -42,99 +45,133 @@ function k() {
       );
   }
 }
-function b() {
-  if (d)
-    return o.resolve(
-      l,
+function getJarPath() {
+  if (isDev) {
+    return path.resolve(
+      __dirname$1,
       "../../backend/build/libs/backend-1.0.0.jar"
     );
-  const e = o.join(
+  }
+  const backendDir = path.join(
     process.resourcesPath,
     "backend"
   );
-  if (!c.existsSync(e))
-    throw new Error("找不到 backend 目录：" + e);
-  const n = c.readdirSync(e).find((r) => r.endsWith(".jar"));
-  if (!n)
+  if (!fs.existsSync(backendDir)) {
+    throw new Error("找不到 backend 目录：" + backendDir);
+  }
+  const jar = fs.readdirSync(backendDir).find((file) => file.endsWith(".jar"));
+  if (!jar) {
     throw new Error("backend 目录没有 jar 文件");
-  return o.join(
-    e,
-    n
+  }
+  return path.join(
+    backendDir,
+    jar
   );
 }
-async function E(e = 8080) {
-  return new Promise((n, r) => {
-    const m = Date.now() + 15e3, p = setInterval(() => {
-      const s = h.connect(e);
-      s.once("connect", () => {
-        clearInterval(p), s.destroy(), n();
-      }), s.once("error", () => {
-        s.destroy(), Date.now() > m && (clearInterval(p), r(
-          new Error("Spring Boot 启动超时")
-        ));
+async function waitBackend(port = 8080) {
+  return new Promise((resolve, reject) => {
+    const timeout = Date.now() + 15e3;
+    const timer = setInterval(() => {
+      const socket = net.connect(port);
+      socket.once("connect", () => {
+        clearInterval(timer);
+        socket.destroy();
+        resolve();
+      });
+      socket.once("error", () => {
+        socket.destroy();
+        if (Date.now() > timeout) {
+          clearInterval(timer);
+          reject(
+            new Error("Spring Boot 启动超时")
+          );
+        }
       });
     }, 300);
   });
 }
-function P() {
-  const e = k(), n = b();
-  if (console.log("======================"), console.log("Java:", e), console.log("Jar :", n), console.log("======================"), !c.existsSync(n))
-    throw new Error("找不到Jar：" + n);
-  i = j(
-    e,
+function startBackend() {
+  const java = getJavaPath();
+  const jar = getJarPath();
+  console.log("======================");
+  console.log("Java:", java);
+  console.log("Jar :", jar);
+  console.log("======================");
+  if (!fs.existsSync(jar)) {
+    throw new Error("找不到Jar：" + jar);
+  }
+  backendProcess = spawn(
+    java,
     [
       "--enable-native-access=ALL-UNNAMED",
       "-jar",
-      n,
+      jar,
       "--server.port=8080"
     ],
     {
-      cwd: o.dirname(n),
+      cwd: path.dirname(jar),
       env: process.env,
       stdio: ["ignore", "pipe", "pipe"]
     }
-  ), i.stdout?.on("data", (r) => {
-    console.log("[Backend]", r.toString());
-  }), i.stderr?.on("data", (r) => {
-    console.error("[Backend]", r.toString());
-  }), i.on("exit", (r) => {
-    console.log("Backend Exit:", r);
+  );
+  backendProcess.stdout?.on("data", (d) => {
+    console.log("[Backend]", d.toString());
+  });
+  backendProcess.stderr?.on("data", (d) => {
+    console.error("[Backend]", d.toString());
+  });
+  backendProcess.on("exit", (code) => {
+    console.log("Backend Exit:", code);
   });
 }
-function w() {
-  a = new u({
+function createWindow() {
+  mainWindow = new BrowserWindow({
     width: 1280,
     height: 820,
     minWidth: 1e3,
     minHeight: 700,
     title: "MCNova Server Launcher",
-    autoHideMenuBar: !0,
-    show: !1,
+    autoHideMenuBar: true,
+    show: false,
     webPreferences: {
-      preload: o.join(l, "preload.js"),
-      nodeIntegration: !1,
-      contextIsolation: !0
+      preload: path.join(__dirname$1, "preload.js"),
+      nodeIntegration: false,
+      contextIsolation: true
     }
-  }), a.once("ready-to-show", () => {
-    a?.show();
-  }), d && process.env.VITE_DEV_SERVER_URL ? (a.loadURL(process.env.VITE_DEV_SERVER_URL), a.webContents.openDevTools()) : a.loadFile(
-    o.join(l, "../dist/index.html")
-  );
+  });
+  mainWindow.once("ready-to-show", () => {
+    mainWindow?.show();
+  });
+  if (isDev && process.env.VITE_DEV_SERVER_URL) {
+    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+    mainWindow.webContents.openDevTools();
+  } else {
+    mainWindow.loadFile(
+      path.join(__dirname$1, "../dist/index.html")
+    );
+  }
 }
-t.whenReady().then(async () => {
+app.whenReady().then(async () => {
   try {
-    P(), await E(), w();
+    startBackend();
+    await waitBackend();
+    createWindow();
   } catch (e) {
-    console.error(e), t.quit();
+    console.error(e);
+    app.quit();
   }
 });
-t.on("before-quit", () => {
-  i?.kill();
+app.on("before-quit", () => {
+  backendProcess?.kill();
 });
-t.on("window-all-closed", () => {
-  process.platform !== "darwin" && t.quit();
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
+    app.quit();
+  }
 });
-t.on("activate", () => {
-  u.getAllWindows().length === 0 && w();
+app.on("activate", () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
+  }
 });
-f.handle("ping", () => "pong");
+ipcMain.handle("ping", () => "pong");
