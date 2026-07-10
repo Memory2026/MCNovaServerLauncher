@@ -1,46 +1,378 @@
 package com.xingci.mcnsl.api;
 
-import com.xingci.mcnsl.model.ApiResponse;
+
+import com.xingci.mcnsl.manager.JavaManager;
+import com.xingci.mcnsl.manager.java.JavaValidator;
 import com.xingci.mcnsl.model.JavaInfo;
-import com.xingci.mcnsl.service.JavaService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.CrossOrigin; // 1. 引入跨域注解
 
+
+import org.springframework.web.bind.annotation.*;
+
+
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
+
+/**
+ * Java管理控制器
+ *
+ * 提供Java环境接口
+ */
 @RestController
 @RequestMapping("/api/java")
-@CrossOrigin(origins = "*") // 2. 📢 核心：加上这行注解，允许前端 5173 端口跨域访问
+@CrossOrigin
 public class JavaController {
 
-    private final JavaService javaService;
 
-    public JavaController(JavaService javaService) {
-        this.javaService = javaService;
+    private final JavaManager javaManager;
+
+
+    private final JavaValidator javaValidator;
+
+
+
+
+
+    public JavaController(
+            JavaManager javaManager,
+            JavaValidator javaValidator
+    ){
+
+        this.javaManager =
+                javaManager;
+
+
+        this.javaValidator =
+                javaValidator;
+
     }
 
-    @GetMapping("/list")
-    public ApiResponse<List<JavaInfo>> list() {
-        List<JavaInfo> list = javaService.getJavaList();
-        return ApiResponse.success(list);
-    }
+
+
+
+
+
+
+
 
     /**
-     * 新增：完美契合你原生 fail(msg) 方法的自动检测接口
+     * 扫描Java
+     *
+     * GET:
+     *
+     * /api/java/scan
+     */
+    @GetMapping("/scan")
+    public List<JavaInfo> scan(){
+
+
+        return javaManager
+                .scan();
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * 获取所有Java
+     */
+    @GetMapping("/list")
+    public List<JavaInfo> list(){
+
+
+        return javaManager
+                .getAll();
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * 获取Minecraft推荐Java
+     *
+     * 例如:
+     *
+     * 1.21 -> Java21
+     */
+    @GetMapping("/select")
+    public JavaInfo select(
+            @RequestParam String version
+    ){
+
+
+        return javaManager
+                .select(
+                        version
+                );
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * 检测Java目录
+     *
+     * POST:
+     *
+     * /api/java/validate
+     *
+     * body:
+     *
+     * {
+     *   "path":"C:/Java/jdk21"
+     * }
+     */
+    @PostMapping("/validate")
+    public Map<String,Object> validate(
+            @RequestBody Map<String,String> body
+    ){
+
+
+
+        Path path =
+                Path.of(
+                        body.get(
+                                "path"
+                        )
+                );
+
+
+
+
+
+        boolean valid =
+                javaValidator
+                        .validate(
+                                path
+                        );
+
+
+
+
+
+        if(!valid){
+
+
+            return Map.of(
+
+                    "valid",
+                    false
+
+            );
+
+
+        }
+
+
+
+
+
+
+
+        JavaInfo info =
+                javaValidator
+                        .inspect(
+                                path
+                        );
+
+
+
+
+
+        return Map.of(
+
+                "valid",
+                true,
+
+                "java",
+                info
+
+        );
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * 获取Java版本
+     */
+    @GetMapping("/version")
+    public String version(
+            @RequestParam String path
+    )
+            throws Exception {
+
+
+        return javaValidator
+                .getVersion(
+
+                        Path.of(
+                                path
+                        )
+
+                );
+
+
+    }
+
+
+    /**
+     * 自动检测系统Java
      */
     @PostMapping("/detect")
-    public ApiResponse<List<JavaInfo>> detect() {
-        List<JavaInfo> list = javaService.getJavaList();
+    public List<JavaInfo> detect(){
 
-        if (list != null && !list.isEmpty()) {
-            // 扫描到有 Java 环境，返回 code = 0
-            return ApiResponse.success(list);
-        } else {
-            // 完美调用你的原生 fail 方法！返回 code = 500 和错误提示
-            return ApiResponse.fail("未在系统中检测到任何有效的 Java 环境");
-        }
+        return javaManager
+                .scan();
+
     }
+
+
+    /**
+     * 设置默认Java
+     */
+    @PostMapping("/default")
+    public JavaInfo setDefault(
+            @RequestBody Map<String,String> body
+    ){
+
+        String path = body.get("path");
+
+        return javaManager
+                .setDefault(
+                        path
+                );
+
+    }
+
+
+    /**
+     * 获取默认Java
+     */
+    @GetMapping("/default")
+    public JavaInfo getDefault(){
+
+        return javaManager
+                .getDefault();
+
+    }
+
+
+    /**
+     * 获取推荐Java版本（根据Minecraft版本）
+     */
+    @GetMapping("/recommend")
+    public Map<String,Object> recommend(
+            @RequestParam(required = false) String minecraftVersion
+    ){
+
+        List<JavaInfo> all = javaManager.getAll();
+
+        if(all.isEmpty()){
+
+            return Map.of(
+                    "success",
+                    false,
+                    "message",
+                    "未检测到Java环境"
+            );
+
+        }
+
+        String mcVersion = minecraftVersion != null ? minecraftVersion : "1.21";
+
+        JavaInfo recommended = javaManager.select(mcVersion);
+
+        JavaInfo currentDefault = javaManager.getDefault();
+
+        return Map.of(
+                "success",
+                true,
+                "recommended",
+                recommended,
+                "minecraftVersion",
+                mcVersion,
+                "requiredJava",
+                getRequiredJavaVersion(mcVersion),
+                "currentDefault",
+                currentDefault,
+                "all",
+                all
+        );
+
+    }
+
+
+    /**
+     * 获取Minecraft所需Java版本
+     */
+    private int getRequiredJavaVersion(String version){
+
+        try{
+
+            String[] split = version.split("\\.");
+
+            int major = Integer.parseInt(split[1]);
+
+            int minor = split.length>2 ? Integer.parseInt(split[2]) : 0;
+
+            if(major==20 && minor>=5){
+
+                return 21;
+
+            }
+
+            if(major>=21){
+
+                return 21;
+
+            }
+
+            if(major>=17){
+
+                return 17;
+
+            }
+
+            return 8;
+
+        }
+        catch(Exception e){
+
+            return 17;
+
+        }
+
+    }
+
+
 }

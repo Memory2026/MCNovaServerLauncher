@@ -1,9 +1,9 @@
-import { contextBridge, ipcRenderer } from "electron";
-contextBridge.exposeInMainWorld(
+import { contextBridge as e, ipcRenderer as n } from "electron";
+e.exposeInMainWorld(
   "electronAPI",
   {
     ping() {
-      return ipcRenderer.invoke(
+      return n.invoke(
         "ping"
       );
     }

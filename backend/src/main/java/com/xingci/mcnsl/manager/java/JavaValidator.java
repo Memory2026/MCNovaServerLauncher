@@ -2,6 +2,7 @@ package com.xingci.mcnsl.manager.java;
 
 
 import com.xingci.mcnsl.model.JavaInfo;
+
 import org.springframework.stereotype.Component;
 
 
@@ -11,246 +12,595 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 
-
+/**
+ * Java环境验证器
+ *
+ * 负责：
+ *
+ * 1. 判断Java目录
+ * 2. 判断JDK/JRE
+ * 3. 获取版本
+ * 4. 校验Java环境
+ */
 @Component
 public class JavaValidator {
 
 
+
     /**
-     * 验证 Java Home
+     * 验证Java Home
+     *
+     * @param home Java目录
      */
-    public JavaInfo validate(Path javaHome) {
+    public boolean validate(
+            Path home
+    ){
 
 
-        if (javaHome == null ||
-                !Files.exists(javaHome) ||
-                !Files.isDirectory(javaHome)) {
-
-            return null;
-
-        }
+        return findJava(home) != null;
 
 
-        boolean windows =
-                System.getProperty("os.name")
-                        .toLowerCase()
-                        .contains("win");
+    }
 
 
 
-        Path javaExecutable =
-                javaHome.resolve("bin")
-                        .resolve(
-                                windows
-                                        ? "java.exe"
-                                        : "java"
-                        );
-
-
-        if (!Files.exists(javaExecutable)) {
-
-            return null;
-
-        }
 
 
 
-        Path javacExecutable =
-                javaHome.resolve("bin")
-                        .resolve(
-                                windows
-                                        ? "javac.exe"
-                                        : "javac"
-                        );
 
 
 
-        JavaInfo info = new JavaInfo();
+    /**
+     * 创建JavaInfo
+     */
+    public JavaInfo inspect(
+            Path home
+    )
+    {
+
+
+        Path java =
+                findJava(home);
 
 
 
-        info.setPath(
-                javaHome
-                        .toAbsolutePath()
-                        .toString()
-        );
+        if(java == null){
 
 
-        info.setJavaExecutable(
-                javaExecutable
-                        .toAbsolutePath()
-                        .toString()
-        );
-
-
-
-        if(Files.exists(javacExecutable)){
-
-
-            info.setJavacExecutable(
-                    javacExecutable
-                            .toAbsolutePath()
-                            .toString()
+            throw new IllegalArgumentException(
+                    "不是有效Java目录:"
+                            +
+                            home
             );
 
 
-            info.setJdk(true);
+        }
 
 
-        }else{
+
+        try{
 
 
-            info.setJdk(false);
+            String version =
+                    getVersion(java);
+
+
+
+            int major =
+                    parseMajor(
+                            version
+                    );
+
+
+
+
+            return new JavaInfo(
+
+                    java,
+
+                    version,
+
+                    major
+
+            );
+
+
+        }
+        catch(Exception e){
+
+
+            throw new RuntimeException(
+                    "Java检测失败",
+                    e
+            );
+
+
+        }
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * 查找java执行文件
+     */
+    public Path findJava(
+            Path home
+    ){
+
+
+        if(home == null
+                ||
+                !Files.exists(home)){
+
+
+            return null;
+
 
         }
 
 
 
-        /*
-         * 获取 Java 版本
-         */
-        try {
-
-
-            Process process =
-                    new ProcessBuilder(
-                            javaExecutable.toString(),
-                            "-version"
-                    )
-                            .redirectErrorStream(true)
-                            .start();
 
 
 
-            BufferedReader reader =
-                    new BufferedReader(
-                            new InputStreamReader(
-                                    process.getInputStream()
-                            )
-                    );
+        Path bin =
+                home.resolve(
+                        "bin"
+                );
 
 
-            String versionLine = null;
 
 
-            String line;
+
+        String javaName =
+                isWindows()
+                        ?
+                        "java.exe"
+                        :
+                        "java";
 
 
-            while((line = reader.readLine()) != null){
 
 
-                if(line.contains("version")){
 
-                    versionLine = line;
+        Path java =
+                bin.resolve(
+                        javaName
+                );
 
-                    break;
 
-                }
+
+
+
+
+        if(Files.exists(java)
+                &&
+                Files.isExecutable(java)){
+
+
+            return java;
+
+
+        }
+
+
+
+
+        return null;
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * 查找javac
+     *
+     * 判断JDK
+     */
+    public Path findJavac(
+            Path home
+    ){
+
+
+        if(home == null){
+
+
+            return null;
+
+
+        }
+
+
+
+
+        Path javac =
+
+                home
+                        .resolve("bin")
+                        .resolve(
+                                isWindows()
+                                        ?
+                                        "javac.exe"
+                                        :
+                                        "javac"
+                        );
+
+
+
+
+
+        if(Files.exists(javac)){
+
+
+            return javac;
+
+
+        }
+
+
+
+
+        return null;
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * 判断是否JDK
+     */
+    public boolean isJdk(
+            Path home
+    ){
+
+
+        return findJavac(
+                home
+        ) != null;
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * 获取版本信息
+     */
+    public String getVersion(
+            Path java
+    )
+            throws Exception {
+
+
+
+        Process process =
+
+                new ProcessBuilder(
+
+                        java.toString(),
+
+                        "-version"
+
+                )
+
+                        .redirectErrorStream(true)
+
+                        .start();
+
+
+
+
+
+
+        BufferedReader reader =
+
+                new BufferedReader(
+
+                        new InputStreamReader(
+
+                                process.getInputStream()
+
+                        )
+
+                );
+
+
+
+
+
+
+        String line;
+
+
+
+        while(
+                (line = reader.readLine())
+                        != null
+        ){
+
+
+            if(line.contains(
+                    "version"
+            )){
+
+
+                return line;
+
 
             }
 
 
-            process.waitFor();
+        }
 
 
 
-            if(versionLine != null){
+        return "unknown";
 
 
-                /*
-                 * 示例:
-                 *
-                 * java version "21.0.11" 2026-04-21 LTS
-                 *
-                 */
-
-
-                String version =
-                        versionLine
-                                .replace("\"","")
-                                .trim();
+    }
 
 
 
-                info.setVersion(version);
 
 
 
-                String major;
-
-
-                if(version.startsWith("1.8")){
-
-                    major = "8";
-
-                }
-                else {
-
-
-                    major =
-                            version
-                                    .split("\\.")[0];
-
-                }
 
 
 
-                info.setName(
-                        "Java " + major
+    /**
+     * 获取主版本
+     */
+    public int getMajorVersion(
+            Path java
+    )
+            throws Exception {
+
+
+
+        return parseMajor(
+                getVersion(
+                        java
+                )
+        );
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * 判断Minecraft是否适用
+     */
+    public boolean supports(
+            JavaInfo java,
+            String minecraftVersion
+    ){
+
+
+        int required =
+                requiredJava(
+                        minecraftVersion
+                );
+
+
+
+        return java.getMajorVersion()
+                >=
+                required;
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Minecraft需要的Java版本
+     */
+    private int requiredJava(
+            String version
+    ){
+
+
+        try{
+
+
+            String[] arr =
+                    version.split("\\.");
+
+
+
+            int major =
+                    Integer.parseInt(
+                            arr[1]
+                    );
+
+
+
+            int minor =
+                    arr.length > 2
+                            ?
+                            Integer.parseInt(
+                                    arr[2]
+                            )
+                            :
+                            0;
+
+
+
+
+
+            if(major >= 21){
+
+                return 21;
+
+            }
+
+
+
+
+
+            if(major >= 17){
+
+                return 17;
+
+            }
+
+
+
+
+
+            return 8;
+
+
+        }
+        catch(Exception e){
+
+
+            return 17;
+
+
+        }
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * 解析版本号
+     */
+    private int parseMajor(
+            String text
+    ){
+
+
+        if(text == null){
+
+            return 0;
+
+        }
+
+
+
+        try{
+
+
+            String value =
+                    text.replace(
+                            "\"",
+                            ""
+                    );
+
+
+
+            String[] arr =
+                    value.split("\\.");
+
+
+
+            int first =
+                    Integer.parseInt(
+                            arr[0]
+                    );
+
+
+
+
+            if(first == 1){
+
+
+                return Integer.parseInt(
+                        arr[1]
                 );
 
 
             }
 
 
-        }catch(Exception e){
 
 
-            info.setName(
-                    "Java"
-            );
+            return first;
 
 
-            info.setVersion(
-                    "Unknown"
-            );
+        }
+        catch(Exception e){
+
+
+            return 0;
+
 
         }
 
-
-
-
-        /*
-         * 判断当前 Java
-         */
-        String currentHome =
-                System.getProperty("java.home");
-
-
-
-        if(currentHome != null){
-
-
-            if(javaHome
-                    .toAbsolutePath()
-                    .normalize()
-                    .equals(
-                            Path.of(currentHome)
-                                    .toAbsolutePath()
-                                    .normalize()
-                    )){
-
-
-                info.setCurrent(true);
-
-            }
-
-        }
-
-
-
-        return info;
 
     }
+
+
+
+
+
+
+
+
+
+    private boolean isWindows(){
+
+
+        return System.getProperty(
+                        "os.name"
+                )
+                .toLowerCase()
+                .contains(
+                        "win"
+                );
+
+
+    }
+
 
 }

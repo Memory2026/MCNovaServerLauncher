@@ -1,188 +1,260 @@
 package com.xingci.mcnsl.manager.java;
 
+
 import com.xingci.mcnsl.model.JavaInfo;
+
 import org.springframework.stereotype.Component;
 
+
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
+import java.io.InputStreamReader;
 import java.nio.file.Path;
-import java.util.Properties;
+
 
 /**
- * 解析 JDK/JRE 的 release 文件
+ * Java release 文件解析器
  *
- * Java Home
- * ├── bin
- * ├── lib
- * ├── conf
- * └── release   ← 本文件负责解析这里
+ * 解析:
+ *
+ * JAVA_HOME/release
+ *
  */
 @Component
 public class ReleaseParser {
 
+
+
     /**
-     * 解析 Java Home
-     *
-     * @param javaHome Java Home
-     * @return JavaInfo
+     * 解析 Java 信息
      */
-    public JavaInfo parse(Path javaHome) {
+    public JavaInfo parse(
+            Path javaHome
+    ){
 
-        JavaInfo info = new JavaInfo();
 
-        info.setPath(javaHome.toString());
+        Path release =
 
-        Path releaseFile = javaHome.resolve("release");
+                javaHome.resolve("release");
 
-        if (!Files.exists(releaseFile)) {
 
-            info.setName("Unknown Java");
-            info.setVendor("Unknown");
-            info.setVersion("Unknown");
-
-            return info;
-        }
-
-        Properties properties = new Properties();
-
-        try (InputStream input = Files.newInputStream(releaseFile)) {
-
-            properties.load(input);
-
-        } catch (IOException e) {
-
-            info.setName("Unknown Java");
-            info.setVendor("Unknown");
-            info.setVersion("Unknown");
-
-            return info;
-        }
 
         String version =
-                trim(properties.getProperty("JAVA_VERSION"));
+                "Unknown";
 
-        String runtimeVersion =
-                trim(properties.getProperty("JAVA_RUNTIME_VERSION"));
+        String vendor =
+                "Unknown";
 
-        String implementor =
-                trim(properties.getProperty("IMPLEMENTOR"));
 
-        String implementorVersion =
-                trim(properties.getProperty("IMPLEMENTOR_VERSION"));
 
-        String osArch =
-                trim(properties.getProperty("OS_ARCH"));
 
-        String modules =
-                trim(properties.getProperty("MODULES"));
 
-        info.setVersion(version);
-        info.setVendor(implementor);
+        if(!release.toFile().exists()){
 
-        // Java 名称
-        info.setName(buildName(implementor, version));
 
-        // 如果 JavaInfo 中还没有这些字段，
-        // 下一步我们会一起补充。
-        try {
-            info.getClass()
-                    .getMethod("setRuntimeVersion", String.class)
-                    .invoke(info, runtimeVersion);
+            return new JavaInfo(
 
-            info.getClass()
-                    .getMethod("setArchitecture", String.class)
-                    .invoke(info, osArch);
+                    javaHome,
 
-            info.getClass()
-                    .getMethod("setModules", String.class)
-                    .invoke(info, modules);
+                    version,
 
-            info.getClass()
-                    .getMethod("setImplementorVersion", String.class)
-                    .invoke(info, implementorVersion);
+                    detectMajor(version)
 
-        } catch (Exception ignored) {
-            // 如果 JavaInfo 暂时没有这些字段，不影响运行
+            );
+
+
         }
 
-        return info;
+
+
+
+
+
+
+        try(
+                BufferedReader reader =
+                        new BufferedReader(
+
+                                new java.io.FileReader(
+                                        release.toFile()
+                                )
+
+                        )
+        ){
+
+
+            String line;
+
+
+
+            while(
+                    (line = reader.readLine())
+
+                            != null
+            ){
+
+
+                if(line.startsWith(
+                        "JAVA_VERSION="
+                )){
+
+
+                    version =
+                            clean(line);
+
+
+                }
+
+
+
+                if(line.startsWith(
+                        "IMPLEMENTOR="
+                )){
+
+
+                    vendor =
+                            clean(line);
+
+
+                }
+
+
+            }
+
+
+
+        }
+        catch(IOException ignored){
+
+        }
+
+
+
+
+
+
+
+        int major =
+
+                detectMajor(version);
+
+
+
+
+
+
+        return new JavaInfo(
+
+                javaHome,
+
+                version,
+
+                major
+
+        );
+
 
     }
+
+
+
+
+
+
+
+
+
+    private String clean(
+            String line
+    ){
+
+
+        int index =
+                line.indexOf('=');
+
+
+
+        if(index < 0){
+
+            return "Unknown";
+
+        }
+
+
+
+        return line.substring(
+                        index + 1
+                )
+                .replace("\"","")
+                .trim();
+
+
+    }
+
+
+
+
+
+
+
+
 
     /**
-     * 去掉 release 文件中的双引号
+     * Java版本号转换
+     *
+     * 例如:
+     *
+     * 1.8.0_402 -> 8
+     *
+     * 17.0.12 ->17
+     *
      */
-    private String trim(String value) {
+    private int detectMajor(
+            String version
+    ){
 
-        if (value == null) {
-            return "";
+
+        try{
+
+
+            version =
+                    version.replace("\"","");
+
+
+
+            if(version.startsWith("1.")){
+
+
+                return Integer.parseInt(
+
+                        version.split("\\.")[1]
+
+                );
+
+
+            }
+
+
+
+            return Integer.parseInt(
+
+                    version.split("\\.")[0]
+
+            );
+
+
+
+        }
+        catch(Exception e){
+
+
+            return 0;
+
+
         }
 
-        value = value.trim();
-
-        if (value.startsWith("\"")) {
-            value = value.substring(1);
-        }
-
-        if (value.endsWith("\"")) {
-            value = value.substring(0, value.length() - 1);
-        }
-
-        return value;
 
     }
 
-    /**
-     * 根据厂商生成名称
-     */
-    private String buildName(String vendor,
-                             String version) {
-
-        if (vendor == null || vendor.isBlank()) {
-
-            return "Java " + version;
-
-        }
-
-        if (vendor.contains("Oracle")) {
-
-            return "Oracle JDK " + version;
-
-        }
-
-        if (vendor.contains("Eclipse")) {
-
-            return "Temurin JDK " + version;
-
-        }
-
-        if (vendor.contains("Microsoft")) {
-
-            return "Microsoft JDK " + version;
-
-        }
-
-        if (vendor.contains("Azul")) {
-
-            return "Zulu JDK " + version;
-
-        }
-
-        if (vendor.contains("BellSoft")) {
-
-            return "Liberica JDK " + version;
-
-        }
-
-        if (vendor.contains("Amazon")) {
-
-            return "Corretto JDK " + version;
-
-        }
-
-        return vendor + " JDK " + version;
-
-    }
 
 }

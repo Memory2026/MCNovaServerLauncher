@@ -1,191 +1,664 @@
 package com.xingci.mcnsl.manager.java;
 
+
+import com.xingci.mcnsl.model.JavaInfo;
+
 import org.springframework.stereotype.Component;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.*;
 import java.util.*;
 
+
+
 /**
- * Java 安装目录扫描器
+ * Java扫描器
  *
- * 仅负责寻找可能存在的 Java Home。
+ * 自动发现系统Java
  */
 @Component
 public class JavaScanner {
 
+
+
     /**
-     * 扫描系统所有可能的 Java Home
+     * 扫描Java环境
      */
-    public Set<Path> scan() {
+    public List<JavaInfo> scan(){
 
-        Set<Path> result = new LinkedHashSet<>();
 
-        String os = System.getProperty("os.name").toLowerCase();
+        Map<String, JavaInfo> result =
+                new HashMap<>();
 
-        if (os.contains("mac")) {
-            scanMacOS(result);
-        } else if (os.contains("win")) {
-            scanWindows(result);
-        } else {
-            scanLinux(result);
-        }
 
-        scanEnvironment(result);
 
-        return result;
+        /*
+         * JAVA_HOME
+         */
+        scanHome(
+                System.getenv("JAVA_HOME"),
+                result
+        );
+
+
+
+        /*
+         * PATH中的java
+         */
+        scanCommand(
+                "java",
+                result
+        );
+
+
+
+        /*
+         * 常见目录
+         */
+        scanCommonLocations(
+                result
+        );
+
+
+
+        return new ArrayList<>(
+                result.values()
+        );
+
     }
 
-    /**
-     * macOS
-     */
-    private void scanMacOS(Set<Path> result) {
 
-        scanDirectory(result,
-                "/Library/Java/JavaVirtualMachines",
-                true);
 
-        scanDirectory(result,
-                System.getProperty("user.home")
-                        + "/Library/Java/JavaVirtualMachines",
-                true);
 
-        scanDirectory(result,
-                "/opt/homebrew/Cellar",
-                false);
 
-        scanDirectory(result,
-                "/usr/local/Cellar",
-                false);
 
-    }
+
+
 
     /**
-     * Windows
+     * 扫描JAVA_HOME
      */
-    private void scanWindows(Set<Path> result) {
+    private void scanHome(
+            String home,
+            Map<String, JavaInfo> result
+    ){
 
-        String[] roots = {
 
-                "C:\\Program Files\\Java",
+        if(home==null){
 
-                "C:\\Program Files\\Eclipse Adoptium",
-
-                "C:\\Program Files\\Microsoft",
-
-                "C:\\Program Files\\Zulu",
-
-                "C:\\Program Files\\BellSoft",
-
-                "C:\\Program Files\\Amazon Corretto"
-
-        };
-
-        for (String root : roots) {
-
-            scanDirectory(result,
-                    root,
-                    false);
+            return;
 
         }
 
-    }
 
-    /**
-     * Linux
-     */
-    private void scanLinux(Set<Path> result) {
+        Path java =
+                getJavaExecutable(
+                        Path.of(home)
+                );
 
-        scanDirectory(result,
-                "/usr/lib/jvm",
-                false);
 
-        scanDirectory(result,
-                "/usr/java",
-                false);
+        add(
+                java,
+                result
+        );
 
-        scanDirectory(result,
-                "/opt/java",
-                false);
 
     }
 
+
+
+
+
+
+
+
+
     /**
-     * 扫描 JAVA_HOME
+     * 扫描命令
      */
-    private void scanEnvironment(Set<Path> result) {
+    private void scanCommand(
+            String command,
+            Map<String, JavaInfo> result
+    ){
 
-        String javaHome = System.getenv("JAVA_HOME");
 
-        if (javaHome != null && !javaHome.isBlank()) {
+        try{
 
-            Path path = Paths.get(javaHome);
 
-            if (Files.exists(path)) {
+            Process process =
+                    new ProcessBuilder(
+                            command,
+                            "-version"
+                    )
+                            .redirectErrorStream(true)
+                            .start();
 
-                result.add(path);
+
+
+            BufferedReader reader =
+                    new BufferedReader(
+                            new InputStreamReader(
+                                    process.getInputStream()
+                            )
+                    );
+
+
+
+            String line;
+
+
+
+            while(
+                    (line=reader.readLine())
+                            !=null
+            ){
+
+
+
+                if(line.contains("version")){
+
+
+                    String path =
+                            findCommandPath(
+                                    command
+                            );
+
+
+                    add(
+                            Path.of(path),
+                            result
+                    );
+
+
+                    break;
+
+                }
+
 
             }
 
+
         }
+        catch(Exception ignored){
+
+
+        }
+
 
     }
 
+
+
+
+
+
+
+
+
     /**
-     * 扫描指定目录
-     *
-     * @param macBundle
-     * 是否为 macOS 的 *.jdk 包
+     * 扫描默认目录
      */
-    private void scanDirectory(Set<Path> result,
-                               String root,
-                               boolean macBundle) {
+    private void scanCommonLocations(
+            Map<String, JavaInfo> result
+    ){
 
-        File dir = new File(root);
 
-        if (!dir.exists()) {
+        String os =
+                System.getProperty(
+                                "os.name"
+                        )
+                        .toLowerCase();
 
-            return;
+
+
+
+        List<Path> paths =
+                new ArrayList<>();
+
+
+
+
+        if(os.contains("win")){
+
+
+            paths.add(
+                    Path.of(
+                            "C:\\Program Files\\Java"
+                    )
+            );
+
+
+            paths.add(
+                    Path.of(
+                            "C:\\Program Files\\Eclipse Adoptium"
+                    )
+            );
+
 
         }
 
-        File[] children = dir.listFiles();
 
-        if (children == null) {
 
-            return;
+        else if(os.contains("mac")){
+
+
+            paths.add(
+                    Path.of(
+                            "/Library/Java/JavaVirtualMachines"
+                    )
+            );
+
 
         }
 
-        for (File child : children) {
 
-            if (!child.isDirectory()) {
+
+        else{
+
+
+            paths.add(
+                    Path.of(
+                            "/usr/lib/jvm"
+                    )
+            );
+
+
+        }
+
+
+
+
+
+
+        for(Path root:paths){
+
+
+            if(!Files.exists(root)){
+
 
                 continue;
 
             }
 
-            if (macBundle) {
 
-                File home = new File(child,
-                        "Contents/Home");
 
-                if (home.exists()) {
 
-                    result.add(home.toPath());
 
-                }
+            try{
 
-            } else {
 
-                result.add(child.toPath());
+                Files.walk(root,3)
+
+                        .filter(
+                                Files::isDirectory
+                        )
+
+                        .forEach(
+                                dir -> {
+
+
+                                    Path java =
+                                            getJavaExecutable(
+                                                    dir
+                                            );
+
+
+                                    add(
+                                            java,
+                                            result
+                                    );
+
+
+                                }
+                        );
+
+
+            }
+            catch(IOException ignored){
+
 
             }
 
+
+
         }
 
+
     }
+
+
+
+
+
+
+
+
+
+    /**
+     * 添加Java
+     */
+    private void add(
+            Path java,
+            Map<String, JavaInfo> result
+    ){
+
+
+        if(java==null
+                ||
+                !Files.exists(java)){
+
+
+            return;
+
+
+        }
+
+
+
+
+        try{
+
+
+            JavaInfo info =
+                    parse(
+                            java
+                    );
+
+
+
+            result.put(
+                    java.toAbsolutePath()
+                            .toString(),
+
+                    info
+            );
+
+
+
+        }
+        catch(Exception ignored){
+
+
+        }
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * 获取Java版本
+     */
+    private JavaInfo parse(
+            Path java
+    )
+            throws Exception {
+
+
+
+        Process process =
+                new ProcessBuilder(
+
+                        java.toString(),
+
+                        "-version"
+
+                )
+
+                        .redirectErrorStream(true)
+
+                        .start();
+
+
+
+
+
+        BufferedReader reader =
+                new BufferedReader(
+                        new InputStreamReader(
+                                process.getInputStream()
+                        )
+                );
+
+
+
+
+        String version =
+                reader.readLine();
+
+
+
+
+
+        int major =
+                parseMajor(
+                        version
+                );
+
+
+
+
+
+        return new JavaInfo(
+
+                java,
+
+                version,
+
+                major
+
+        );
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * 解析主版本
+     */
+    private int parseMajor(
+            String text
+    ){
+
+
+        if(text==null){
+
+            return 0;
+
+        }
+
+
+
+        String[] nums =
+                text.replace(
+                                "\"",
+                                ""
+                        )
+                        .split("\\.");
+
+
+
+
+        try{
+
+
+            int first =
+                    Integer.parseInt(
+                            nums[0]
+                    );
+
+
+
+            if(first==1){
+
+                return Integer.parseInt(
+                        nums[1]
+                );
+
+            }
+
+
+            return first;
+
+
+        }
+        catch(Exception e){
+
+
+            return 0;
+
+
+        }
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * 获取java执行文件
+     */
+    private Path getJavaExecutable(
+            Path home
+    ){
+
+
+        if(home==null){
+
+            return null;
+
+        }
+
+
+
+        Path bin =
+                home.resolve(
+                        "bin"
+                );
+
+
+
+        String exe =
+                System.getProperty(
+                                "os.name"
+                        )
+                        .toLowerCase()
+                        .contains("win")
+                        ?
+                        "java.exe"
+                        :
+                        "java";
+
+
+
+        Path java =
+                bin.resolve(
+                        exe
+                );
+
+
+
+        if(Files.exists(java)){
+
+
+            return java;
+
+
+        }
+
+
+
+        return null;
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * 获取PATH中的真实路径
+     */
+    private String findCommandPath(
+            String command
+    )
+    {
+
+
+        try{
+
+
+            Process process =
+                    new ProcessBuilder(
+
+                            System.getProperty(
+                                            "os.name"
+                                    )
+                                    .toLowerCase()
+                                    .contains("win")
+                                    ?
+                                    "where"
+                                    :
+                                    "which",
+
+                            command
+
+                    )
+
+                            .start();
+
+
+
+
+            return new BufferedReader(
+
+                    new InputStreamReader(
+                            process.getInputStream()
+                    )
+
+            )
+                    .readLine();
+
+
+        }
+        catch(Exception e){
+
+
+            return null;
+
+
+        }
+
+
+    }
+
+
 
 }
