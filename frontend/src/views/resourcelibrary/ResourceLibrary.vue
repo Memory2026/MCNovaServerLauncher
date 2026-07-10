@@ -14,7 +14,7 @@
                 : 'bg-gray-100 text-slate-700 hover:bg-gray-200',
             ]"
           >
-            <img :src="getTabIcon(tab.icon, tab.path)" class="w-5 h-5 object-contain" />
+            <img :src="tab.icon" class="w-5 h-5 object-contain" />
             <span>{{ tab.name }}</span>
           </button>
         </div>
@@ -75,16 +75,15 @@
 
 <script setup>
 import { ref } from 'vue'
+import GrassIcon from '../../assets/icons/minecraft/Grass.png'
+import EndPortalFrameIcon from '../../assets/icons/minecraft/loader/EndPortalFrame.png'
+import CommandBlockIcon from '../../assets/icons/minecraft/CommandBlock.png'
 
 const tabs = [
-  { id: 'version', name: '版本', icon: 'Grass.png', path: '' },
-  { id: 'loader', name: '加载器', icon: 'Anvil.png', path: 'loader/' },
-  { id: 'platform', name: '平台', icon: 'CommandBlock.png', path: '' },
+  { id: 'version', name: '版本', icon: GrassIcon },
+  { id: 'loader', name: '加载器', icon: EndPortalFrameIcon },
+  { id: 'platform', name: '平台', icon: CommandBlockIcon },
 ]
 
 const currentTab = ref('version')
-
-const getTabIcon = (fileName, path = '') => {
-  return new URL(`../../assets/icons/minecraft/${path}${fileName}`, import.meta.url).href
-}
 </script>
