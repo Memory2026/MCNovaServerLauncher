@@ -563,14 +563,17 @@
                 >
                   <div
                     @click.stop="fabricApiMap.selectedVersion = 'none'"
-                    class="flex justify-between items-center px-3 py-1.5 rounded-lg text-xs cursor-pointer transition-colors"
+                    class="flex justify-between items-center px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
                     :class="[
                       fabricApiMap.selectedVersion === 'none'
                         ? 'bg-zinc-200/70 text-zinc-900 font-bold'
-                        : 'text-gray-500 hover:bg-gray-100',
+                        : 'hover:bg-gray-100 text-gray-600',
                     ]"
                   >
-                    <span>🚫 不安装 Fabric API 扩展</span>
+                    <div class="flex items-center gap-3">
+                      <img :src="getLoaderIcon('Barrier.png')" class="w-4 h-4 object-contain" />
+                      <span>不安装 Fabric API 扩展</span>
+                    </div>
                     <span
                       v-if="fabricApiMap.selectedVersion === 'none'"
                       class="text-[10px] text-zinc-800"
@@ -582,20 +585,23 @@
                     v-for="(api, index) in fabricApiMap.list"
                     :key="api"
                     @click.stop="fabricApiMap.selectedVersion = api"
-                    class="flex justify-between items-center px-3 py-1.5 rounded-lg text-xs cursor-pointer transition-colors"
+                    class="flex justify-between items-center px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
                     :class="[
                       fabricApiMap.selectedVersion === api
                         ? 'bg-zinc-200/70 text-zinc-900 font-bold'
                         : 'hover:bg-gray-100 text-gray-600',
                     ]"
                   >
-                    <div class="flex items-center gap-2">
-                      <span>📦 {{ api }}</span>
+                    <div class="flex items-center gap-3">
+                      <img :src="getLoaderIcon('Fabric.png')" class="w-4 h-4 object-contain" />
+                      <div class="flex items-center gap-2">
+                        <span>{{ api }}</span>
                       <span
                         v-if="index === 0"
                         class="text-[9px] bg-blue-200 text-blue-700 px-1 rounded font-normal"
                         >推荐匹配</span
                       >
+                      </div>
                     </div>
                     <span
                       v-if="fabricApiMap.selectedVersion === api"
