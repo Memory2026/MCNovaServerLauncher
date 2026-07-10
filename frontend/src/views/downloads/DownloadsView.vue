@@ -547,36 +547,36 @@
           </div>
 
           <div
-            class="flex flex-col border-2 border-red-200 rounded-xl overflow-hidden transition-all duration-200 bg-red-50/30"
+            class="flex flex-col border rounded-xl overflow-hidden transition-all duration-200 bg-white"
             :class="[
               selectedLoader === 'fabric' && fabricApiMap.selectedVersion && fabricApiMap.selectedVersion !== 'none'
-                ? 'border-red-400 shadow-sm'
+                ? 'border-blue-400 shadow-sm'
                 : '',
             ]"
           >
             <div
-              class="flex justify-between items-center p-4 cursor-pointer select-none hover:bg-red-50/50"
+              class="flex justify-between items-center p-4 cursor-pointer select-none hover:bg-gray-50"
               @click="expandedLoader = expandedLoader === 'fabric-api' ? '' : 'fabric-api'"
             >
               <div class="flex items-center gap-4">
-                <div class="w-9 h-9 bg-red-100 rounded-lg flex items-center justify-center">
-                  <span class="text-red-500 text-lg">📦</span>
+                <div class="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <span class="text-gray-500 text-lg">📦</span>
                 </div>
                 <div class="flex flex-col">
                   <div class="flex items-center gap-2">
-                    <span class="text-sm font-bold text-red-600">Fabric API</span>
+                    <span class="text-sm font-bold text-gray-600">Fabric API</span>
                     <span
-                      class="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-600 font-medium"
+                      class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium"
                     >
                       {{ fabricApiMap.selectedVersion && fabricApiMap.selectedVersion !== 'none' ? fabricApiMap.selectedVersion : '可选依赖' }}
                     </span>
                   </div>
-                  <span class="text-xs text-red-400/70 mt-0.5">Fabric 模组开发核心 API（安装 Fabric 时可选）</span>
+                  <span class="text-xs text-gray-400 mt-0.5">Fabric 模组开发核心 API（安装 Fabric 时可选）</span>
                 </div>
               </div>
               <div class="flex items-center gap-3">
                 <button
-                  class="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.2 rounded hover:bg-red-200 transition-colors"
+                  class="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.2 rounded hover:bg-gray-200 transition-colors"
                   @click.stop="handleFabricApiAutoMatch()"
                 >
                   自动匹配
@@ -588,7 +588,7 @@
                   stroke-width="2.5"
                   stroke="currentColor"
                   :class="[
-                    'w-4 h-4 text-red-400 transition-transform duration-200',
+                    'w-4 h-4 text-gray-400 transition-transform duration-200',
                     expandedLoader === 'fabric-api' ? 'rotate-180' : '',
                   ]"
                 >
@@ -603,7 +603,7 @@
 
             <div
               v-show="expandedLoader === 'fabric-api' && selectedLoader === 'fabric'"
-              class="bg-red-50/50 border-t border-red-200/60 p-4"
+              class="bg-white border-t border-gray-200 p-4"
             >
               <div
                 v-if="fabricApiMap.list.length > 0"
@@ -614,14 +614,14 @@
                   class="flex justify-between items-center px-3 py-1.5 rounded-lg text-xs cursor-pointer transition-colors"
                   :class="[
                     fabricApiMap.selectedVersion === 'none'
-                      ? 'bg-red-200/70 text-red-900 font-bold'
-                      : 'text-gray-500 hover:bg-red-100/50',
+                      ? 'bg-blue-100 text-blue-700 font-bold'
+                      : 'text-gray-500 hover:bg-gray-50',
                   ]"
                 >
                   <span>🚫 不安装 Fabric API 扩展</span>
                   <span
                     v-if="fabricApiMap.selectedVersion === 'none'"
-                    class="text-[10px] text-red-600"
+                    class="text-[10px] text-blue-600"
                     >●</span
                   >
                 </div>
@@ -633,21 +633,21 @@
                   class="flex justify-between items-center px-3 py-1.5 rounded-lg text-xs cursor-pointer transition-colors"
                   :class="[
                     fabricApiMap.selectedVersion === api
-                      ? 'bg-red-200/70 text-red-900 font-bold'
-                      : 'hover:bg-red-100/50 text-gray-600',
+                      ? 'bg-blue-100 text-blue-700 font-bold'
+                      : 'hover:bg-gray-50 text-gray-600',
                   ]"
                 >
                   <div class="flex items-center gap-2">
                     <span>📦 {{ api }}</span>
                     <span
                       v-if="index === 0"
-                      class="text-[9px] bg-red-200 text-red-700 px-1 rounded font-normal"
+                      class="text-[9px] bg-blue-200 text-blue-700 px-1 rounded font-normal"
                       >推荐匹配</span
                     >
                   </div>
                   <span
                     v-if="fabricApiMap.selectedVersion === api"
-                    class="text-[10px] text-red-600"
+                    class="text-[10px] text-blue-600"
                     >●</span
                   >
                 </div>
