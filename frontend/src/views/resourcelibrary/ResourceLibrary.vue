@@ -1002,11 +1002,12 @@ const isVersionTypeExpanded = (groupIndex, subIndex, loaderKey, versionType) => 
 }
 
 const getVersionIcon = (versionType) => {
-  if (!versionType) return '/assets/icons/modversions/Release.png'
+  const base = import.meta.env.PROD ? './assets' : '/assets'
+  if (!versionType) return `${base}/icons/modversions/Release.png`
   const type = versionType.toLowerCase()
-  if (type === 'beta') return '/assets/icons/modversions/Beta.png'
-  if (type === 'alpha') return '/assets/icons/modversions/Alpha.png'
-  return '/assets/icons/modversions/Release.png'
+  if (type === 'beta') return `${base}/icons/modversions/Beta.png`
+  if (type === 'alpha') return `${base}/icons/modversions/Alpha.png`
+  return `${base}/icons/modversions/Release.png`
 }
 
 // ========== 选择操作 ==========
