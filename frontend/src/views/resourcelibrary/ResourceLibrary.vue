@@ -102,7 +102,7 @@
                     ]"
                   >
                     <img
-                      :src="getVersionIcon(version.type)"
+                      :src="GrassIcon"
                       class="w-4 h-4 object-contain"
                     />
                     <span class="text-sm font-medium">{{ version.versionId || version.name }}</span>
