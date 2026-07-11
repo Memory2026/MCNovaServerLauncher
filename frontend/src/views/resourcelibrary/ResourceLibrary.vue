@@ -491,12 +491,10 @@
                                     class="flex items-center gap-3 p-2.5 bg-white rounded-md cursor-pointer hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100"
                                     @click="selectModVersion(variant)"
                                   >
-                                    <div class="w-7 h-7 flex-shrink-0 rounded-md overflow-hidden bg-gray-100">
-                                      <img
-                                        :src="getVersionIcon(variant.versionType)"
-                                        :alt="variant.name"
-                                        class="w-full h-full object-cover"
-                                      />
+                                    <div class="w-6 h-6 flex-shrink-0 rounded flex items-center justify-center" :class="variant.versionType?.toLowerCase() === 'beta' ? 'bg-yellow-100' : variant.versionType?.toLowerCase() === 'alpha' ? 'bg-red-100' : 'bg-green-100'">
+                                      <span class="text-xs font-bold" :class="variant.versionType?.toLowerCase() === 'beta' ? 'text-yellow-600' : variant.versionType?.toLowerCase() === 'alpha' ? 'text-red-600' : 'text-green-600'">
+                                        {{ variant.versionType?.toLowerCase() === 'beta' ? 'B' : variant.versionType?.toLowerCase() === 'alpha' ? 'A' : 'R' }}
+                                      </span>
                                     </div>
                                     <div class="flex-1 min-w-0">
                                       <div class="font-medium text-gray-900 text-xs">{{ variant.name }}</div>
@@ -545,12 +543,10 @@
                                     class="flex items-center gap-3 p-2.5 bg-white rounded-md cursor-pointer hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100"
                                     @click="selectModVersion(variant)"
                                   >
-                                    <div class="w-7 h-7 flex-shrink-0 rounded-md overflow-hidden bg-gray-100">
-                                      <img
-                                        :src="getVersionIcon(variant.versionType)"
-                                        :alt="variant.name"
-                                        class="w-full h-full object-cover"
-                                      />
+                                    <div class="w-6 h-6 flex-shrink-0 rounded flex items-center justify-center" :class="variant.versionType?.toLowerCase() === 'beta' ? 'bg-yellow-100' : variant.versionType?.toLowerCase() === 'alpha' ? 'bg-red-100' : 'bg-green-100'">
+                                      <span class="text-xs font-bold" :class="variant.versionType?.toLowerCase() === 'beta' ? 'text-yellow-600' : variant.versionType?.toLowerCase() === 'alpha' ? 'text-red-600' : 'text-green-600'">
+                                        {{ variant.versionType?.toLowerCase() === 'beta' ? 'B' : variant.versionType?.toLowerCase() === 'alpha' ? 'A' : 'R' }}
+                                      </span>
                                     </div>
                                     <div class="flex-1 min-w-0">
                                       <div class="font-medium text-gray-900 text-xs">{{ variant.name }}</div>
@@ -602,12 +598,10 @@
           >
             <div class="bg-white rounded-xl shadow-xl w-80 p-6 transform transition-all">
               <div class="flex items-center gap-3 mb-4">
-                <div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <img
-                    v-if="selectedVariant"
-                    :src="getVersionIcon(selectedVariant.versionType)"
-                    class="w-8 h-8 object-contain"
-                  />
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center" :class="selectedVariant?.versionType?.toLowerCase() === 'beta' ? 'bg-yellow-100' : selectedVariant?.versionType?.toLowerCase() === 'alpha' ? 'bg-red-100' : 'bg-green-100'">
+                  <span class="text-lg font-bold" :class="selectedVariant?.versionType?.toLowerCase() === 'beta' ? 'text-yellow-600' : selectedVariant?.versionType?.toLowerCase() === 'alpha' ? 'text-red-600' : 'text-green-600'">
+                    {{ selectedVariant?.versionType?.toLowerCase() === 'beta' ? 'B' : selectedVariant?.versionType?.toLowerCase() === 'alpha' ? 'A' : 'R' }}
+                  </span>
                 </div>
                 <div>
                   <h3 class="font-semibold text-gray-900 text-sm">{{ selectedVariant?.name }}</h3>
