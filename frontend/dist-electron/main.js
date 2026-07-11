@@ -10,40 +10,26 @@ let mainWindow = null;
 let backendProcess = null;
 const isDev = !app.isPackaged || process.env.NODE_ENV === "development";
 function getJavaPath() {
+  console.log("getJavaPath() - isDev:", isDev, "platform:", process.platform);
   if (isDev) {
     return process.platform === "win32" ? "java" : "/usr/bin/java";
   }
-  switch (process.platform) {
-    case "darwin":
-      return path.join(
-        process.resourcesPath,
-        "runtime",
-        "mac",
-        "jdk25",
-        "Contents",
-        "Home",
-        "bin",
-        "java"
-      );
-    case "win32":
-      return path.join(
-        process.resourcesPath,
-        "runtime",
-        "windows",
-        "jdk25",
-        "bin",
-        "java.exe"
-      );
-    default:
-      return path.join(
-        process.resourcesPath,
-        "runtime",
-        "linux",
-        "jdk25",
-        "bin",
-        "java"
-      );
+  const runtimePaths = {
+    darwin: ["runtime", "mac", "jdk25", "Contents", "Home", "bin", "java"],
+    win32: ["runtime", "windows", "jdk25", "bin", "java.exe"],
+    linux: ["runtime", "linux", "jdk25", "bin", "java"]
+  };
+  const paths = runtimePaths[process.platform] || runtimePaths.linux;
+  const bundledPath = path.join(process.resourcesPath, ...paths);
+  console.log("getJavaPath() - bundledPath:", bundledPath);
+  console.log("getJavaPath() - fs.existsSync:", fs.existsSync(bundledPath));
+  if (fs.existsSync(bundledPath)) {
+    return bundledPath;
   }
+  console.warn("未找到打包的 Java 运行时，尝试使用系统 Java:", bundledPath);
+  const sysJava = process.platform === "win32" ? "java.exe" : "java";
+  console.log("getJavaPath() - returning system java:", sysJava);
+  return sysJava;
 }
 function getJarPath() {
   if (isDev) {
@@ -169,6 +155,13 @@ app.whenReady().then(async () => {
     createWindow();
   } catch (e) {
     console.error(e);
+    if (!isDev) {
+      const { dialog } = await import("electron");
+      dialog.showErrorBox(
+        "启动失败",
+        "无法启动后端服务。请确保系统已安装 Java 21 或更高版本。\n\n错误信息: " + e.message
+      );
+    }
     app.quit();
   }
 });
