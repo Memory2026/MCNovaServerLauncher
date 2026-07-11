@@ -761,7 +761,7 @@ import AnvilIcon from '../../assets/icons/minecraft/loader/Anvil.png'
 import NeoForgeIcon from '../../assets/icons/minecraft/loader/NeoForge.png'
 import FabricIcon from '../../assets/icons/minecraft/loader/Fabric.png'
 
-const API_BASE = '/api'
+const API_BASE = import.meta.env.PROD ? 'http://localhost:8080/api' : '/api'
 
 const searchQuery = ref('')
 const isVersionMenuOpen = ref(false)
