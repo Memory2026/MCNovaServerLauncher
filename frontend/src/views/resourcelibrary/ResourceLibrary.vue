@@ -632,7 +632,7 @@
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
-                  保存到本地文件夹
+                  保存到本地
                 </button>
               </div>
               <button
@@ -1057,14 +1057,14 @@ const saveToLocal = async () => {
   if (!selectedVariant.value) return
   const url = selectedVariant.value.fileUrl
   const fileName = selectedVariant.value.fileName
-  
+
   const link = document.createElement('a')
   link.href = url
   link.download = fileName
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
-  
+
   closeVersionModal()
 }
 
