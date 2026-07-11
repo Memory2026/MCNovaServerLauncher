@@ -1,181 +1,132 @@
-import { app, BrowserWindow, ipcMain } from "electron";
-import path from "node:path";
-import fs from "node:fs";
-import net from "node:net";
-import { spawn } from "node:child_process";
-import { fileURLToPath } from "node:url";
-const __filename$1 = fileURLToPath(import.meta.url);
-const __dirname$1 = path.dirname(__filename$1);
-let mainWindow = null;
-let backendProcess = null;
-const isDev = !app.isPackaged || process.env.NODE_ENV === "development";
-function getJavaPath() {
-  console.log("getJavaPath() - isDev:", isDev, "platform:", process.platform);
-  if (isDev) {
+import { app as r, BrowserWindow as h, ipcMain as v } from "electron";
+import t from "node:path";
+import a from "node:fs";
+import g from "node:net";
+import { spawn as b } from "node:child_process";
+import { fileURLToPath as j } from "node:url";
+const P = j(import.meta.url), u = t.dirname(P);
+let i = null, l = null;
+const c = !r.isPackaged || process.env.NODE_ENV === "development";
+function x() {
+  if (console.log("getJavaPath() - isDev:", c, "platform:", process.platform), c)
     return process.platform === "win32" ? "java" : "/usr/bin/java";
-  }
-  const runtimePaths = {
+  const o = {
     darwin: ["runtime", "mac", "jdk25", "Contents", "Home", "bin", "java"],
-    win32: ["runtime", "windows", "jdk25", "bin", "java.exe"],
+    win32: ["runtime", "windows", "jdk25", "bin", "java"],
     linux: ["runtime", "linux", "jdk25", "bin", "java"]
-  };
-  const paths = runtimePaths[process.platform] || runtimePaths.linux;
-  const bundledPath = path.join(process.resourcesPath, ...paths);
-  console.log("getJavaPath() - bundledPath:", bundledPath);
-  console.log("getJavaPath() - fs.existsSync:", fs.existsSync(bundledPath));
-  if (fs.existsSync(bundledPath)) {
-    return bundledPath;
-  }
-  console.warn("未找到打包的 Java 运行时，尝试使用系统 Java:", bundledPath);
-  const sysJava = process.platform === "win32" ? "java.exe" : "java";
-  console.log("getJavaPath() - returning system java:", sysJava);
-  return sysJava;
+  }, n = o[process.platform] || o.linux, e = t.join(process.resourcesPath, ...n), s = process.platform === "win32" ? e + ".exe" : e;
+  return console.log("getJavaPath() - bundledPath:", e), console.log("getJavaPath() - bundledPathExe:", s), console.log("getJavaPath() - fs.existsSync(bundledPath):", a.existsSync(e)), console.log("getJavaPath() - fs.existsSync(bundledPathExe):", a.existsSync(s)), a.existsSync(e) ? e : a.existsSync(s) ? s : (console.warn("未找到打包的 Java 运行时，尝试使用系统 Java:", e), "java");
 }
-function getJarPath() {
-  if (isDev) {
-    return path.resolve(
-      __dirname$1,
+function E() {
+  if (c)
+    return t.resolve(
+      u,
       "../../backend/build/libs/backend-1.0.0.jar"
     );
-  }
-  const backendDir = path.join(
+  const o = t.join(
     process.resourcesPath,
     "backend"
   );
-  if (!fs.existsSync(backendDir)) {
-    throw new Error("找不到 backend 目录：" + backendDir);
-  }
-  const jar = fs.readdirSync(backendDir).find((file) => file.endsWith(".jar"));
-  if (!jar) {
+  if (!a.existsSync(o))
+    throw new Error("找不到 backend 目录：" + o);
+  const n = a.readdirSync(o).find((e) => e.endsWith(".jar"));
+  if (!n)
     throw new Error("backend 目录没有 jar 文件");
-  }
-  return path.join(
-    backendDir,
-    jar
+  return t.join(
+    o,
+    n
   );
 }
-async function waitBackend(port = 8080) {
-  return new Promise((resolve, reject) => {
-    const timeout = Date.now() + 15e3;
-    const timer = setInterval(() => {
-      const socket = net.connect(port);
-      socket.once("connect", () => {
-        clearInterval(timer);
-        socket.destroy();
-        resolve();
-      });
-      socket.once("error", () => {
-        socket.destroy();
-        if (Date.now() > timeout) {
-          clearInterval(timer);
-          reject(
-            new Error("Spring Boot 启动超时")
-          );
-        }
+async function p(o = 8080) {
+  return new Promise((n, e) => {
+    const s = Date.now() + 15e3, w = setInterval(() => {
+      const d = g.connect(o);
+      d.once("connect", () => {
+        clearInterval(w), d.destroy(), n();
+      }), d.once("error", () => {
+        d.destroy(), Date.now() > s && (clearInterval(w), e(
+          new Error("Spring Boot 启动超时")
+        ));
       });
     }, 300);
   });
 }
-function startBackend() {
-  const java = getJavaPath();
-  const jar = getJarPath();
-  console.log("======================");
-  console.log("Java:", java);
-  console.log("Jar :", jar);
-  console.log("======================");
-  if (!fs.existsSync(jar)) {
-    throw new Error("找不到Jar：" + jar);
-  }
-  backendProcess = spawn(
-    java,
+function f() {
+  const o = x(), n = E();
+  if (console.log("======================"), console.log("Java:", o), console.log("Jar :", n), console.log("======================"), !a.existsSync(n))
+    throw new Error("找不到Jar：" + n);
+  l = b(
+    o,
     [
       "--enable-native-access=ALL-UNNAMED",
       "-jar",
-      jar,
+      n,
       "--server.port=8080"
     ],
     {
-      cwd: path.dirname(jar),
+      cwd: t.dirname(n),
       env: process.env,
       stdio: ["ignore", "pipe", "pipe"]
     }
-  );
-  backendProcess.stdout?.on("data", (d) => {
-    console.log("[Backend]", d.toString());
-  });
-  backendProcess.stderr?.on("data", (d) => {
-    console.error("[Backend]", d.toString());
-  });
-  backendProcess.on("exit", (code) => {
-    console.log("Backend Exit:", code);
+  ), l.stdout?.on("data", (e) => {
+    console.log("[Backend]", e.toString());
+  }), l.stderr?.on("data", (e) => {
+    console.error("[Backend]", e.toString());
+  }), l.on("exit", (e) => {
+    console.log("Backend Exit:", e);
   });
 }
-function createWindow() {
-  mainWindow = new BrowserWindow({
+function m() {
+  i = new h({
     width: 1280,
     height: 820,
     minWidth: 1e3,
     minHeight: 700,
     title: "MCNova Server Launcher",
-    autoHideMenuBar: true,
-    show: false,
+    autoHideMenuBar: !0,
+    show: !1,
     webPreferences: {
-      preload: path.join(__dirname$1, "preload.js"),
-      nodeIntegration: false,
-      contextIsolation: true
+      preload: t.join(u, "preload.js"),
+      nodeIntegration: !1,
+      contextIsolation: !0
     }
-  });
-  mainWindow.once("ready-to-show", () => {
-    mainWindow?.show();
-  });
-  if (isDev && process.env.VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-    mainWindow.webContents.openDevTools();
-  } else {
-    mainWindow.loadFile(
-      path.join(__dirname$1, "../dist/index.html")
-    );
-  }
+  }), i.once("ready-to-show", () => {
+    i?.show();
+  }), c && process.env.VITE_DEV_SERVER_URL ? (i.loadURL(process.env.VITE_DEV_SERVER_URL), i.webContents.openDevTools()) : i.loadFile(
+    t.join(u, "../dist/index.html")
+  );
 }
-app.whenReady().then(async () => {
+r.whenReady().then(async () => {
   try {
-    if (isDev) {
+    if (c)
       try {
-        await waitBackend();
-        console.log("后端已在运行");
+        await p(), console.log("后端已在运行");
       } catch {
-        console.log("后端未运行，尝试启动...");
-        startBackend();
-        await waitBackend();
+        console.log("后端未运行，尝试启动..."), f(), await p();
       }
-    } else {
-      startBackend();
-      await waitBackend();
-    }
-    createWindow();
-  } catch (e) {
-    console.error(e);
-    if (!isDev) {
-      const { dialog } = await import("electron");
-      dialog.showErrorBox(
+    else
+      f(), await p();
+    m();
+  } catch (o) {
+    if (console.error(o), !c) {
+      const { dialog: n } = await import("electron");
+      n.showErrorBox(
         "启动失败",
-        "无法启动后端服务。请确保系统已安装 Java 21 或更高版本。\n\n错误信息: " + e.message
+        `无法启动后端服务。请确保系统已安装 Java 21 或更高版本。
+
+错误信息: ` + o.message
       );
     }
-    app.quit();
+    r.quit();
   }
 });
-app.on("before-quit", () => {
-  backendProcess?.kill();
+r.on("before-quit", () => {
+  l?.kill();
 });
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
+r.on("window-all-closed", () => {
+  process.platform !== "darwin" && r.quit();
 });
-app.on("activate", () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
+r.on("activate", () => {
+  h.getAllWindows().length === 0 && m();
 });
-ipcMain.handle("ping", () => "pong");
+v.handle("ping", () => "pong");

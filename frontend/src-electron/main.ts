@@ -24,26 +24,29 @@ function getJavaPath(): string {
 
   const runtimePaths: Record<string, string[]> = {
     darwin: ["runtime", "mac", "jdk25", "Contents", "Home", "bin", "java"],
-    win32: ["runtime", "windows", "jdk25", "bin", "java.exe"],
+    win32: ["runtime", "windows", "jdk25", "bin", "java"],
     linux: ["runtime", "linux", "jdk25", "bin", "java"]
   };
 
   const paths = runtimePaths[process.platform] || runtimePaths.linux;
   const bundledPath = path.join(process.resourcesPath, ...paths);
+  const bundledPathExe = process.platform === "win32" ? bundledPath + ".exe" : bundledPath;
 
   console.log("getJavaPath() - bundledPath:", bundledPath);
-  console.log("getJavaPath() - fs.existsSync:", fs.existsSync(bundledPath));
+  console.log("getJavaPath() - bundledPathExe:", bundledPathExe);
+  console.log("getJavaPath() - fs.existsSync(bundledPath):", fs.existsSync(bundledPath));
+  console.log("getJavaPath() - fs.existsSync(bundledPathExe):", fs.existsSync(bundledPathExe));
 
   if (fs.existsSync(bundledPath)) {
     return bundledPath;
   }
+  if (fs.existsSync(bundledPathExe)) {
+    return bundledPathExe;
+  }
 
   console.warn("未找到打包的 Java 运行时，尝试使用系统 Java:", bundledPath);
 
-  const sysJava = process.platform === "win32" ? "java.exe" : "java";
-  console.log("getJavaPath() - returning system java:", sysJava);
-
-  return sysJava;
+  return "java";
 }
 
 function getJarPath(): string {
