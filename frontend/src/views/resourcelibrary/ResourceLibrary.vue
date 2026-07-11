@@ -325,17 +325,17 @@
           </div>
         </div>
 
-        <div class="bg-white rounded-xl border border-gray-100 overflow-hidden">
-          <div class="flex items-center gap-2 p-4 border-b border-gray-100 bg-gray-50/50 overflow-x-auto">
+        <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl overflow-hidden">
+          <div class="flex items-center gap-1 p-3 overflow-x-auto">
             <button
               v-for="tab in mcVersionTabs"
               :key="tab"
               @click="selectedMcVersion = tab"
-              class="px-3 py-1.5 rounded-full text-sm font-medium transition-all flex-shrink-0"
+              class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex-shrink-0"
               :class="[
                 selectedMcVersion === tab
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-100',
+                  ? 'bg-blue-500 text-white shadow-sm'
+                  : 'bg-white/60 text-gray-600 hover:bg-white',
               ]"
             >
               {{ tab }}
@@ -344,29 +344,23 @@
 
           <div v-if="modVersionLoading" class="p-8">
             <div class="space-y-3">
-              <div class="h-12 bg-gray-200/60 animate-pulse rounded-lg"></div>
-              <div class="h-12 bg-gray-200/60 animate-pulse rounded-lg"></div>
-              <div class="h-12 bg-gray-200/60 animate-pulse rounded-lg"></div>
+              <div class="h-12 bg-white/60 animate-pulse rounded-lg"></div>
+              <div class="h-12 bg-white/60 animate-pulse rounded-lg"></div>
+              <div class="h-12 bg-white/60 animate-pulse rounded-lg"></div>
             </div>
           </div>
 
-          <div v-else class="divide-y divide-gray-100">
+          <div v-else class="space-y-1">
             <div
-              v-for="(versionGroup, index) in filteredVersionGroups"
-              :key="index"
-              class="overflow-hidden"
+              v-for="(versionGroup, groupIndex) in filteredVersionGroups"
+              :key="groupIndex"
+              class="mx-2 bg-white rounded-lg overflow-hidden"
             >
               <button
-                @click="toggleVersionGroup(index)"
-                class="flex items-center justify-between w-full p-4 hover:bg-gray-50/50 transition-colors text-left"
+                @click="toggleVersionGroup(groupIndex)"
+                class="flex items-center justify-between w-full px-4 py-2.5 hover:bg-gray-50/50 transition-colors text-left"
               >
-                <div class="flex items-center gap-3">
-                  <img
-                    :src="getLoaderIcon(versionGroup.loader)"
-                    class="w-6 h-6 object-contain"
-                  />
-                  <span class="font-medium text-gray-800">{{ versionGroup.title }}</span>
-                </div>
+                <span class="font-bold text-gray-800 text-sm">{{ versionGroup.title }}</span>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
@@ -375,7 +369,7 @@
                   stroke="currentColor"
                   :class="[
                     'w-4 h-4 text-gray-400 transition-transform duration-200',
-                    expandedVersionGroups.includes(index) ? 'rotate-180' : '',
+                    expandedVersionGroups.includes(groupIndex) ? 'rotate-180' : '',
                   ]"
                 >
                   <path
@@ -387,41 +381,197 @@
               </button>
 
               <div
-                v-show="expandedVersionGroups.includes(index)"
-                class="bg-blue-50/30 px-4 pb-4"
+                v-show="expandedVersionGroups.includes(groupIndex)"
+                class="border-t border-gray-100 bg-gray-50/30"
               >
-                <div class="space-y-2 pt-2">
+                <div class="space-y-1">
                   <div
-                    v-for="(variant, vIndex) in versionGroup.variants"
-                    :key="vIndex"
-                    class="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100 hover:border-gray-200 transition-all cursor-pointer"
-                    @click="selectModVersion(variant)"
+                    v-for="(subVersion, subIndex) in versionGroup.subVersions"
+                    :key="subIndex"
+                    class="mx-2 my-1 bg-white rounded-lg overflow-hidden"
                   >
-                    <div class="w-8 h-8 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
-                      <img
-                        :src="variant.icon"
-                        :alt="variant.name"
-                        class="w-full h-full object-cover"
-                        @error="(e) => { e.target.src = DefaultModIcon }"
-                      />
-                    </div>
+                    <button
+                      @click="toggleSubVersion(groupIndex, subIndex)"
+                      class="flex items-center justify-between w-full px-4 py-2.5 hover:bg-gray-50/50 transition-colors text-left"
+                    >
+                      <span class="font-medium text-gray-800 text-sm">{{ subVersion.title }}</span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke-width="2"
+                        stroke="currentColor"
+                        :class="[
+                          'w-4 h-4 text-gray-400 transition-transform duration-200',
+                          isSubVersionExpanded(groupIndex, subIndex) ? 'rotate-180' : '',
+                        ]"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                        />
+                      </svg>
+                    </button>
 
-                    <div class="flex-1 min-w-0">
-                      <div class="font-medium text-gray-900 text-sm">{{ variant.name }}</div>
-                      <div class="text-xs text-gray-500 mt-0.5">
-                        {{ variant.loader }}, {{ variant.fileName }}
+                    <div
+                      v-show="isSubVersionExpanded(groupIndex, subIndex)"
+                      class="border-t border-gray-100 bg-gray-50/30"
+                    >
+                      <div class="space-y-1 p-2">
+                        <div
+                          v-for="(loaderGroup, loaderKey) in subVersion.loaders"
+                          :key="loaderKey"
+                          class="bg-white rounded-lg overflow-hidden"
+                        >
+                          <button
+                            @click="toggleLoader(groupIndex, subIndex, loaderKey)"
+                            class="flex items-center justify-between w-full px-4 py-2.5 hover:bg-gray-50/50 transition-colors text-left"
+                          >
+                            <div class="flex items-center gap-3">
+                              <img :src="getLoaderIcon(loaderKey)" class="w-6 h-6 object-contain" />
+                              <div class="flex flex-col">
+                                <span class="text-sm font-medium text-gray-800">{{ loaderGroup.title }}</span>
+                                <span class="text-xs text-gray-400">
+                                  {{ (loaderGroup.release?.length || 0) + (loaderGroup.beta?.length || 0) }} 个版本
+                                </span>
+                              </div>
+                            </div>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke-width="2"
+                              stroke="currentColor"
+                              :class="[
+                                'w-4 h-4 text-gray-400 transition-transform duration-200',
+                                isLoaderExpanded(groupIndex, subIndex, loaderKey) ? 'rotate-180' : '',
+                              ]"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                              />
+                            </svg>
+                          </button>
+
+                          <div
+                            v-show="isLoaderExpanded(groupIndex, subIndex, loaderKey)"
+                            class="border-t border-gray-100 bg-gray-50/30"
+                          >
+                            <div class="p-2">
+                              <div v-if="loaderGroup.release && loaderGroup.release.length > 0" class="mb-2">
+                                <button
+                                  @click="toggleVersionType(groupIndex, subIndex, loaderKey, 'release')"
+                                  class="flex items-center justify-between w-full px-3 py-2 bg-white/80 rounded-md hover:bg-white transition-colors"
+                                >
+                                  <span class="text-xs font-medium text-green-600">正式版 ({{ loaderGroup.release.length }})</span>
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke-width="2"
+                                    stroke="currentColor"
+                                    :class="[
+                                      'w-3 h-3 text-gray-400 transition-transform duration-200',
+                                      isVersionTypeExpanded(groupIndex, subIndex, loaderKey, 'release') ? 'rotate-180' : '',
+                                    ]"
+                                  >
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                                  </svg>
+                                </button>
+                                <div
+                                  v-show="isVersionTypeExpanded(groupIndex, subIndex, loaderKey, 'release')"
+                                  class="mt-1 space-y-1"
+                                >
+                                  <div
+                                    v-for="(variant, vIndex) in loaderGroup.release"
+                                    :key="vIndex"
+                                    class="flex items-center gap-3 p-2.5 bg-white rounded-md cursor-pointer hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100"
+                                    @click="selectModVersion(variant)"
+                                  >
+                                    <div class="w-7 h-7 flex-shrink-0 rounded-md overflow-hidden bg-gray-100">
+                                      <img
+                                        :src="getVersionIcon(variant.versionType)"
+                                        :alt="variant.name"
+                                        class="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                      <div class="font-medium text-gray-900 text-xs">{{ variant.name }}</div>
+                                      <div class="text-xs text-gray-500 mt-0.5">{{ variant.fileName }}</div>
+                                    </div>
+                                    <div class="flex items-center gap-3 text-xs text-gray-400">
+                                      <span class="flex items-center gap-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3 h-3">
+                                          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                        </svg>
+                                        {{ variant.downloads }}
+                                      </span>
+                                      <span>{{ variant.updatedAt }}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div v-if="loaderGroup.beta && loaderGroup.beta.length > 0">
+                                <button
+                                  @click="toggleVersionType(groupIndex, subIndex, loaderKey, 'beta')"
+                                  class="flex items-center justify-between w-full px-3 py-2 bg-white/80 rounded-md hover:bg-white transition-colors"
+                                >
+                                  <span class="text-xs font-medium text-orange-500">测试版 ({{ loaderGroup.beta.length }})</span>
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke-width="2"
+                                    stroke="currentColor"
+                                    :class="[
+                                      'w-3 h-3 text-gray-400 transition-transform duration-200',
+                                      isVersionTypeExpanded(groupIndex, subIndex, loaderKey, 'beta') ? 'rotate-180' : '',
+                                    ]"
+                                  >
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                                  </svg>
+                                </button>
+                                <div
+                                  v-show="isVersionTypeExpanded(groupIndex, subIndex, loaderKey, 'beta')"
+                                  class="mt-1 space-y-1"
+                                >
+                                  <div
+                                    v-for="(variant, vIndex) in loaderGroup.beta"
+                                    :key="vIndex"
+                                    class="flex items-center gap-3 p-2.5 bg-white rounded-md cursor-pointer hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100"
+                                    @click="selectModVersion(variant)"
+                                  >
+                                    <div class="w-7 h-7 flex-shrink-0 rounded-md overflow-hidden bg-gray-100">
+                                      <img
+                                        :src="getVersionIcon(variant.versionType)"
+                                        :alt="variant.name"
+                                        class="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                      <div class="font-medium text-gray-900 text-xs">{{ variant.name }}</div>
+                                      <div class="text-xs text-gray-500 mt-0.5">{{ variant.fileName }}</div>
+                                    </div>
+                                    <div class="flex items-center gap-3 text-xs text-gray-400">
+                                      <span class="flex items-center gap-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3 h-3">
+                                          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                        </svg>
+                                        {{ variant.downloads }}
+                                      </span>
+                                      <span>{{ variant.updatedAt }}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-
-                    <div class="flex items-center gap-4 text-xs text-gray-400">
-                      <span class="flex items-center gap-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3 h-3">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        {{ variant.downloads }}
-                      </span>
-                      <span>{{ variant.updatedAt }}</span>
-                      <span v-if="variant.isBeta" class="text-orange-500 font-medium">测试版</span>
                     </div>
                   </div>
                 </div>
@@ -443,6 +593,57 @@
           </svg>
           返回 Mod 列表
         </button>
+
+        <Teleport to="body">
+          <div
+            v-if="showVersionModal"
+            class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            @click.self="closeVersionModal"
+          >
+            <div class="bg-white rounded-xl shadow-xl w-80 p-6 transform transition-all">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <img
+                    v-if="selectedVariant"
+                    :src="getVersionIcon(selectedVariant.versionType)"
+                    class="w-8 h-8 object-contain"
+                  />
+                </div>
+                <div>
+                  <h3 class="font-semibold text-gray-900 text-sm">{{ selectedVariant?.name }}</h3>
+                  <p class="text-xs text-gray-500">{{ selectedVariant?.fileName }}</p>
+                </div>
+              </div>
+              <div class="space-y-3">
+                <button
+                  @click="downloadToInstance"
+                  class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  下载到游戏实例
+                </button>
+                <button
+                  @click="saveToLocal"
+                  class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  保存到本地文件夹
+                </button>
+              </div>
+              <button
+                @click="closeVersionModal"
+                class="mt-4 w-full px-4 py-2 text-gray-500 hover:text-gray-700 transition-colors text-sm"
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        </Teleport>
       </template>
 
       <template v-else>
@@ -587,6 +788,9 @@ const selectedPlatform = ref(null)
 const selectedMod = ref(null)
 const selectedMcVersion = ref('全部')
 const expandedVersionGroups = ref([])
+const expandedSubVersions = ref({})
+const expandedLoaders = ref({})
+const expandedVersionTypes = ref({})
 const modVersionGroups = ref([])
 const modVersionLoading = ref(false)
 
@@ -595,11 +799,28 @@ const modLoading = ref(false)
 const searchOffset = ref(0)
 const hasMore = ref(true)
 
-const mcVersionTabs = ['全部', '1.21', '1.20', '1.19', '1.18', '1.17', '1.16', '1.15', '1.14', '1.13', '1.12']
+const mcVersionTabs = computed(() => {
+  const versions = new Set(['全部'])
+  modVersionGroups.value.forEach(group => {
+    versions.add(group.mcVersion)
+  })
+  const sorted = Array.from(versions).sort((a, b) => {
+    if (a === '全部') return -1
+    if (b === '全部') return 1
+    const partsA = a.split('.').map(p => parseInt(p) || 0)
+    const partsB = b.split('.').map(p => parseInt(p) || 0)
+    for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+      const diff = (partsA[i] || 0) - (partsB[i] || 0)
+      if (diff !== 0) return -diff
+    }
+    return 0
+  })
+  return sorted
+})
 
 const DefaultModIcon = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuNiIvPjwvc3ZnPg=='
 
-// ========== 从 Modrinth API 获取模组 ==========
+// ========== 从 Modrinth/CurseForge API 获取模组 ==========
 
 const fetchMods = async (reset = false) => {
   if (modLoading.value) return
@@ -619,8 +840,16 @@ const fetchMods = async (reset = false) => {
     if (selectedLoader.value) params.loader = selectedLoader.value.id
     if (selectedVersion.value) params.version = selectedVersion.value.versionId
 
-    const response = await axios.get(`${API_BASE}/modrinth/search`, { params })
-    const newMods = response.data || []
+    const platform = selectedPlatform.value?.id || 'modrinth'
+    let response, newMods
+
+    if (platform === 'curseforge') {
+      response = await axios.get(`${API_BASE}/curseforge/search`, { params })
+      newMods = response.data || []
+    } else {
+      response = await axios.get(`${API_BASE}/modrinth/search`, { params })
+      newMods = response.data || []
+    }
 
     if (reset || searchOffset.value === 0) {
       mods.value = newMods
@@ -631,7 +860,7 @@ const fetchMods = async (reset = false) => {
     hasMore.value = newMods.length >= 20
     searchOffset.value += newMods.length
   } catch (error) {
-    console.error('获取 Modrinth 模组失败:', error)
+    console.error('获取模组失败:', error)
     if (reset) mods.value = []
   } finally {
     modLoading.value = false
@@ -652,9 +881,6 @@ watch(selectedVersion, () => fetchMods(true))
 watch(selectedPlatform, () => fetchMods(true))
 
 const filteredMods = computed(() => {
-  if (selectedPlatform.value && selectedPlatform.value.id !== 'modrinth') {
-    return []
-  }
   return mods.value
 })
 
@@ -692,9 +918,95 @@ const toggleVersionGroup = (index) => {
   const idx = expandedVersionGroups.value.indexOf(index)
   if (idx > -1) {
     expandedVersionGroups.value.splice(idx, 1)
+    delete expandedSubVersions.value[index]
+    delete expandedLoaders.value[index]
   } else {
     expandedVersionGroups.value.push(index)
+    expandedSubVersions.value[index] = {}
+    expandedLoaders.value[index] = {}
   }
+}
+
+const toggleSubVersion = (groupIndex, subIndex) => {
+  if (!expandedSubVersions.value[groupIndex]) {
+    expandedSubVersions.value[groupIndex] = {}
+  }
+  const key = String(subIndex)
+  if (expandedSubVersions.value[groupIndex][key]) {
+    expandedSubVersions.value[groupIndex][key] = false
+    if (expandedLoaders.value[groupIndex]) {
+      delete expandedLoaders.value[groupIndex][key]
+    }
+  } else {
+    expandedSubVersions.value[groupIndex][key] = true
+    if (!expandedLoaders.value[groupIndex]) {
+      expandedLoaders.value[groupIndex] = {}
+    }
+    expandedLoaders.value[groupIndex][key] = {}
+  }
+}
+
+const isSubVersionExpanded = (groupIndex, subIndex) => {
+  return expandedSubVersions.value[groupIndex]?.[String(subIndex)] || false
+}
+
+const toggleLoader = (groupIndex, subIndex, loaderKey) => {
+  if (!expandedLoaders.value[groupIndex]) {
+    expandedLoaders.value[groupIndex] = {}
+  }
+  if (!expandedLoaders.value[groupIndex][subIndex]) {
+    expandedLoaders.value[groupIndex][subIndex] = {}
+  }
+  const key = String(subIndex)
+  const loaderMap = expandedLoaders.value[groupIndex][key] || {}
+  if (loaderMap[loaderKey]) {
+    loaderMap[loaderKey] = false
+  } else {
+    loaderMap[loaderKey] = true
+  }
+  expandedLoaders.value[groupIndex][key] = { ...loaderMap }
+}
+
+const isLoaderExpanded = (groupIndex, subIndex, loaderKey) => {
+  return expandedLoaders.value[groupIndex]?.[String(subIndex)]?.[loaderKey] || false
+}
+
+const showVersionModal = ref(false)
+const selectedVariant = ref(null)
+
+const toggleVersionType = (groupIndex, subIndex, loaderKey, versionType) => {
+  if (!expandedVersionTypes.value[groupIndex]) {
+    expandedVersionTypes.value[groupIndex] = {}
+  }
+  if (!expandedVersionTypes.value[groupIndex][subIndex]) {
+    expandedVersionTypes.value[groupIndex][subIndex] = {}
+  }
+  if (!expandedVersionTypes.value[groupIndex][subIndex][loaderKey]) {
+    expandedVersionTypes.value[groupIndex][subIndex][loaderKey] = {}
+  }
+  const key = String(subIndex)
+  const typeMap = expandedVersionTypes.value[groupIndex][key]?.[loaderKey] || {}
+  if (typeMap[versionType]) {
+    typeMap[versionType] = false
+  } else {
+    typeMap[versionType] = true
+  }
+  if (!expandedVersionTypes.value[groupIndex][key]) {
+    expandedVersionTypes.value[groupIndex][key] = {}
+  }
+  expandedVersionTypes.value[groupIndex][key][loaderKey] = { ...typeMap }
+}
+
+const isVersionTypeExpanded = (groupIndex, subIndex, loaderKey, versionType) => {
+  return expandedVersionTypes.value[groupIndex]?.[String(subIndex)]?.[loaderKey]?.[versionType] || false
+}
+
+const getVersionIcon = (versionType) => {
+  if (!versionType) return '/assets/icons/modversions/Release.png'
+  const type = versionType.toLowerCase()
+  if (type === 'beta') return '/assets/icons/modversions/Beta.png'
+  if (type === 'alpha') return '/assets/icons/modversions/Alpha.png'
+  return '/assets/icons/modversions/Release.png'
 }
 
 // ========== 选择操作 ==========
@@ -715,21 +1027,61 @@ const selectMod = async (mod) => {
   selectedMod.value = mod
   selectedMcVersion.value = '全部'
   expandedVersionGroups.value = []
+  expandedSubVersions.value = {}
+  expandedLoaders.value = {}
+  expandedVersionTypes.value = {}
   modVersionGroups.value = []
-  await fetchModVersions(mod.slug)
+  const projectId = mod.slug || mod.id
+  const platform = mod.source || mod.platform || 'modrinth'
+  console.log('selectMod:', projectId, platform)
+  await fetchModVersions(projectId, platform)
 }
 
 const selectModVersion = (variant) => {
-  console.log('Selected mod version:', variant)
+  selectedVariant.value = variant
+  showVersionModal.value = true
+}
+
+const closeVersionModal = () => {
+  showVersionModal.value = false
+  selectedVariant.value = null
+}
+
+const downloadToInstance = async () => {
+  if (!selectedVariant.value) return
+  console.log('下载到游戏实例:', selectedVariant.value)
+  closeVersionModal()
+}
+
+const saveToLocal = async () => {
+  if (!selectedVariant.value) return
+  const url = selectedVariant.value.fileUrl
+  const fileName = selectedVariant.value.fileName
+  
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  
+  closeVersionModal()
 }
 
 // ========== 获取模组版本 ==========
 
-const fetchModVersions = async (slug) => {
+const fetchModVersions = async (projectId, platform) => {
   modVersionLoading.value = true
   try {
-    const response = await axios.get(`${API_BASE}/modrinth/project/${slug}/versions`)
+    let response
+    if (platform === 'curseforge') {
+      response = await axios.get(`${API_BASE}/curseforge/project/${projectId}/versions`)
+    } else {
+      response = await axios.get(`${API_BASE}/modrinth/project/${projectId}/versions`)
+    }
+    console.log('版本数据:', response.data)
     modVersionGroups.value = response.data || []
+    console.log('modVersionGroups:', modVersionGroups.value.length)
   } catch (error) {
     console.error('获取模组版本失败:', error)
     modVersionGroups.value = []
@@ -740,24 +1092,19 @@ const fetchModVersions = async (slug) => {
 
 // ========== 工具方法 ==========
 
-const getVersionIcon = (type) => {
-  let icon = GrassIcon
-  if (type) {
-    const t = type.toLowerCase()
-    if (t === 'release' || t === '正式版') icon = GrassIcon
-    else if (t === 'snapshot' || t === '快照' || t === 'preview' || t === '预览版')
-      icon = CommandBlockIcon
-    else if (t === 'old_alpha' || t === 'old_beta' || t === 'old' || t === '远古版')
-      icon = CobbleStoneIcon
-  }
-  return icon
-}
-
 const getLoaderIcon = (loaderId) => {
   if (loaderId === 'forge') return AnvilIcon
   if (loaderId === 'neoforge') return NeoForgeIcon
   if (loaderId === 'fabric') return FabricIcon
   return GrassIcon
+}
+
+const getLoaderDisplayName = (loaderId) => {
+  if (loaderId === 'forge') return 'Forge'
+  if (loaderId === 'neoforge') return 'NeoForge'
+  if (loaderId === 'fabric') return 'Fabric'
+  if (loaderId === 'quilt') return 'Quilt'
+  return loaderId || '其他'
 }
 
 const openMcWiki = (modName) => {

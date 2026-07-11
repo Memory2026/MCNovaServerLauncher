@@ -159,36 +159,64 @@ public class ModrinthApi {
                 loaders.add(l.asText());
             }
 
-            // 游戏版本列表
+            // 游戏版本列表（过滤快照版本）
             List<String> gameVersions = new ArrayList<>();
             for (JsonNode gv : v.path("game_versions")) {
-                gameVersions.add(gv.asText());
+                String version = gv.asText();
+                if (!isSnapshotVersion(version)) {
+                    gameVersions.add(version);
+                }
             }
 
-            // 为每个 loader + mcVersion 组合创建分组
-            for (String loader : loaders) {
-                String loaderDisplay = formatLoaderName(loader);
-                for (String gv : gameVersions) {
-                    String mcVersion = simplifyVersion(gv);
-                    String groupKey = loader + "|" + mcVersion;
+            // 三层分组（PCL 风格：主版本 → 子版本 → 加载器）
+            for (String gv : gameVersions) {
+                String mcVersion = simplifyVersion(gv);
+                String mainVersion = getMainVersion(mcVersion);
+                String groupKey = mainVersion;
 
-                    if (!groups.containsKey(groupKey)) {
-                        Map<String, Object> group = new LinkedHashMap<>();
-                        group.put("title", loaderDisplay + " " + mcVersion);
-                        group.put("loader", loader);
-                        group.put("mcVersion", mcVersion);
-                        group.put("variants", new ArrayList<Map<String, Object>>());
-                        groups.put(groupKey, group);
+                if (!groups.containsKey(groupKey)) {
+                    Map<String, Object> group = new LinkedHashMap<>();
+                    group.put("title", mainVersion);
+                    group.put("mcVersion", mainVersion);
+                    group.put("subVersions", new LinkedHashMap<String, Map<String, Object>>());
+                    groups.put(groupKey, group);
+                }
+
+                @SuppressWarnings("unchecked")
+                Map<String, Map<String, Object>> subVersionsMap =
+                        (Map<String, Map<String, Object>>) groups.get(groupKey).get("subVersions");
+
+                if (!subVersionsMap.containsKey(mcVersion)) {
+                    Map<String, Object> subVersionGroup = new LinkedHashMap<>();
+                    subVersionGroup.put("title", mcVersion);
+                    subVersionGroup.put("mcVersion", mcVersion);
+                    subVersionGroup.put("loaders", new LinkedHashMap<String, Map<String, Object>>());
+                    subVersionsMap.put(mcVersion, subVersionGroup);
+                }
+
+                @SuppressWarnings("unchecked")
+                Map<String, Map<String, Object>> loadersMap =
+                        (Map<String, Map<String, Object>>) subVersionsMap.get(mcVersion).get("loaders");
+
+                for (String loader : loaders) {
+                    String loaderDisplay = formatLoaderName(loader);
+                    String loaderKey = loader.toLowerCase();
+
+                    if (!loadersMap.containsKey(loaderKey)) {
+                        Map<String, Object> loaderGroup = new LinkedHashMap<>();
+                        loaderGroup.put("title", loaderDisplay);
+                        loaderGroup.put("key", loaderKey);
+                        loaderGroup.put("release", new ArrayList<Map<String, Object>>());
+                        loaderGroup.put("beta", new ArrayList<Map<String, Object>>());
+                        loadersMap.put(loaderKey, loaderGroup);
                     }
-
-                    @SuppressWarnings("unchecked")
-                    List<Map<String, Object>> variants =
-                            (List<Map<String, Object>>) groups.get(groupKey).get("variants");
 
                     Map<String, Object> variant = new LinkedHashMap<>();
                     variant.put("name", versionName);
                     variant.put("versionNumber", versionNumber);
                     variant.put("loader", loaderDisplay);
+                    variant.put("loaderKey", loaderKey);
+                    variant.put("mcVersion", mcVersion);
                     variant.put("fileName", fileName);
                     variant.put("fileUrl", fileUrl);
                     variant.put("downloads", formatDownloads(downloads));
@@ -197,10 +225,12 @@ public class ModrinthApi {
                     variant.put("versionType", versionType);
                     variant.put("featured", featured);
 
-                    // 图标用模组自身的图标
                     variant.put("icon", BASE + "/project/" + slug + "/icon");
 
-                    variants.add(variant);
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> targetList = (List<Map<String, Object>>) loadersMap.get(loaderKey)
+                            .get("beta".equals(versionType) || "alpha".equals(versionType) ? "beta" : "release");
+                    targetList.add(variant);
                 }
             }
         }
@@ -310,13 +340,32 @@ public class ModrinthApi {
     }
 
     private String simplifyVersion(String version) {
-        // "1.21.1" -> "1.21.1", "1.21" -> "1.21"
-        // 取前两段作为主版本号
-        String[] parts = version.split("\\.");
+        if (version == null || version.isEmpty()) return version;
+        
+        String cleaned = version.replaceAll("-snapshot.*", "")
+                               .replaceAll("-pre.*", "")
+                               .replaceAll("-rc.*", "")
+                               .replaceAll("-alpha.*", "")
+                               .replaceAll("-beta.*", "")
+                               .replaceAll("-dev.*", "")
+                               .replaceAll("\\+.*", "");
+        
+        String[] parts = cleaned.split("\\.");
         if (parts.length >= 2) {
-            return parts[0] + "." + parts[1];
+            if (!parts[0].matches("\\d+")) {
+                return cleaned;
+            }
+            int major = Integer.parseInt(parts[0]);
+            if (major >= 20) {
+                return parts[0] + "." + parts[1];
+            } else {
+                if (parts.length >= 3) {
+                    return parts[0] + "." + parts[1] + "." + parts[2];
+                }
+                return parts[0] + "." + parts[1];
+            }
         }
-        return version;
+        return cleaned;
     }
 
     private String capitalize(String s) {
@@ -332,5 +381,29 @@ public class ModrinthApi {
         if (lower.equals("forge")) return "Forge";
         if (lower.equals("quilt")) return "Quilt";
         return capitalize(loader);
+    }
+
+    private boolean isSnapshotVersion(String version) {
+        if (version == null || version.isEmpty()) return true;
+        String lower = version.toLowerCase();
+        return lower.matches("\\d{2}w\\d{2}[a-z]?") ||
+               lower.matches("\\d{2}w\\d{2}[a-z]?_\\w+") ||
+               lower.contains("pre-") ||
+               lower.contains("-pre") ||
+               lower.contains("-rc") ||
+               lower.contains("snapshot") ||
+               lower.contains("oneblock") ||
+               lower.contains("potato") ||
+               lower.contains("infinite") ||
+               lower.contains("craftmine");
+    }
+
+    private String getMainVersion(String version) {
+        if (version == null || version.isEmpty()) return version;
+        String[] parts = version.split("\\.");
+        if (parts.length >= 2) {
+            return parts[0] + "." + parts[1];
+        }
+        return version;
     }
 }

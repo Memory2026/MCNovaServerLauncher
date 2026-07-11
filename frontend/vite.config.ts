@@ -20,6 +20,7 @@ export default defineConfig({
     tailwindcss(),
 
 
+
     electron([
 
       {
@@ -44,6 +45,24 @@ export default defineConfig({
 
   ],
 
+  server: {
+    host: '0.0.0.0',
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false
+      },
+      '/ws': {
+        target: 'ws://localhost:8080',
+        ws: true
+      }
+    },
+    allowedHosts: [
+      't-gzvfllwu.tunn.dev',
+      '1co1161532vp7.vicp.fun'
+    ]
+  },
 
   resolve: {
 
@@ -56,39 +75,6 @@ export default defineConfig({
 
     }
 
-  },
-
-
-  server: {
-    host: '0.0.0.0',
-
-    proxy: {
-
-      '/api': {
-
-        target: 'http://localhost:8080',
-
-        changeOrigin: true,
-
-        secure: false,
-
-      },
-
-
-      '/ws': {
-
-        target: 'ws://localhost:8080',
-
-        ws: true
-
-      }
-
-    },
-
-    allowedHosts: [
-      't-gzvfllwu.tunn.dev',
-      '1co1161532vp7.vicp.fun'
-    ]
-
   }
+
 })

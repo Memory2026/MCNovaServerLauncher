@@ -50,6 +50,38 @@ public final class HttpUtils {
     }
 
     /**
+     * GET 请求，返回字符串（支持自定义 API Key）
+     */
+    public static String get(String url, String apiKey)
+            throws IOException, InterruptedException {
+
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofSeconds(30))
+                .header("User-Agent", "MCNovaServerLauncher/1.0")
+                .GET();
+
+        if (apiKey != null && !apiKey.isBlank() && !apiKey.equals("your-api-key-here")) {
+            builder.header("x-api-key", apiKey);
+            System.out.println("[HttpUtils] API Key configured, length: " + apiKey.length());
+            System.out.println("[HttpUtils] API Key starts with: " + (apiKey.length() > 15 ? apiKey.substring(0, 15) + "..." : apiKey));
+        }
+
+        HttpRequest request = builder.build();
+
+        HttpResponse<String> response =
+                CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() != 200) {
+            throw new IOException(
+                    "HTTP " + response.statusCode() + " : " + url
+            );
+        }
+
+        return response.body();
+    }
+
+    /**
      * GET 请求
      *
      * 返回字节数组

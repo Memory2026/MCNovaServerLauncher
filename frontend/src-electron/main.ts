@@ -11,7 +11,7 @@ const __dirname = path.dirname(__filename);
 let mainWindow: BrowserWindow | null = null;
 let backendProcess: ChildProcess | null = null;
 
-const isDev = !app.isPackaged;
+const isDev = !app.isPackaged || process.env.NODE_ENV === 'development';
 
 function getJavaPath(): string {
 
@@ -256,23 +256,27 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
-
   try {
-
-    startBackend();
-
-    await waitBackend();
+    if (isDev) {
+      try {
+        await waitBackend();
+        console.log("后端已在运行");
+      } catch {
+        console.log("后端未运行，尝试启动...");
+        startBackend();
+        await waitBackend();
+      }
+    } else {
+      startBackend();
+      await waitBackend();
+    }
 
     createWindow();
 
   } catch (e) {
-
     console.error(e);
-
     app.quit();
-
   }
-
 });
 
 app.on("before-quit", () => {

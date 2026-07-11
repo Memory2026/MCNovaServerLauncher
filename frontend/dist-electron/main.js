@@ -8,7 +8,7 @@ const __filename$1 = fileURLToPath(import.meta.url);
 const __dirname$1 = path.dirname(__filename$1);
 let mainWindow = null;
 let backendProcess = null;
-const isDev = !app.isPackaged;
+const isDev = !app.isPackaged || process.env.NODE_ENV === "development";
 function getJavaPath() {
   if (isDev) {
     return process.platform === "win32" ? "java" : "/usr/bin/java";
@@ -153,8 +153,19 @@ function createWindow() {
 }
 app.whenReady().then(async () => {
   try {
-    startBackend();
-    await waitBackend();
+    if (isDev) {
+      try {
+        await waitBackend();
+        console.log("后端已在运行");
+      } catch {
+        console.log("后端未运行，尝试启动...");
+        startBackend();
+        await waitBackend();
+      }
+    } else {
+      startBackend();
+      await waitBackend();
+    }
     createWindow();
   } catch (e) {
     console.error(e);
