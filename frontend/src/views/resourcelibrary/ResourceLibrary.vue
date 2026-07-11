@@ -760,6 +760,9 @@ import CobbleStoneIcon from '../../assets/icons/minecraft/CobbleStone.png'
 import AnvilIcon from '../../assets/icons/minecraft/loader/Anvil.png'
 import NeoForgeIcon from '../../assets/icons/minecraft/loader/NeoForge.png'
 import FabricIcon from '../../assets/icons/minecraft/loader/Fabric.png'
+import ReleaseIcon from '../../assets/icons/modversions/Release.png'
+import BetaIcon from '../../assets/icons/modversions/Beta.png'
+import AlphaIcon from '../../assets/icons/modversions/Alpha.png'
 
 const API_BASE = import.meta.env.PROD ? 'http://localhost:8080/api' : '/api'
 
@@ -1002,12 +1005,11 @@ const isVersionTypeExpanded = (groupIndex, subIndex, loaderKey, versionType) => 
 }
 
 const getVersionIcon = (versionType) => {
-  const base = import.meta.env.PROD ? './assets' : '/assets'
-  if (!versionType) return `${base}/icons/modversions/Release.png`
+  if (!versionType) return ReleaseIcon
   const type = versionType.toLowerCase()
-  if (type === 'beta') return `${base}/icons/modversions/Beta.png`
-  if (type === 'alpha') return `${base}/icons/modversions/Alpha.png`
-  return `${base}/icons/modversions/Release.png`
+  if (type === 'beta') return BetaIcon
+  if (type === 'alpha') return AlphaIcon
+  return ReleaseIcon
 }
 
 // ========== 选择操作 ==========
