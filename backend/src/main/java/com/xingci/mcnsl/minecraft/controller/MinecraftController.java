@@ -2,6 +2,7 @@ package com.xingci.mcnsl.minecraft.controller;
 
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,7 @@ import com.xingci.mcnsl.minecraft.launch.LaunchOptions;
 import com.xingci.mcnsl.minecraft.launch.MinecraftLauncher;
 import com.xingci.mcnsl.minecraft.launch.ProcessManager;
 import com.xingci.mcnsl.minecraft.util.JavaUtils;
+import com.xingci.mcnsl.minecraft.websocket.MinecraftLogWebSocket;
 
 
 
@@ -51,6 +53,13 @@ public class MinecraftController {
     private final ProcessManager processManager;
 
 
+    private final MinecraftLogWebSocket minecraftLogWebSocket;
+
+
+    private static java.util.List<Map<String, Object>> logBuffer = new java.util.concurrent.CopyOnWriteArrayList<>();
+    private static int logIdCounter = 0;
+
+
 
 
 
@@ -58,7 +67,8 @@ public class MinecraftController {
             MinecraftInstanceManager instanceManager,
             MinecraftInstallManager installManager,
             MinecraftLauncher launcher,
-            ProcessManager processManager
+            ProcessManager processManager,
+            MinecraftLogWebSocket minecraftLogWebSocket
     ){
 
         this.instanceManager =
@@ -76,6 +86,20 @@ public class MinecraftController {
         this.processManager =
                 processManager;
 
+
+        this.minecraftLogWebSocket =
+                minecraftLogWebSocket;
+
+    }
+
+    public static void addLog(String message) {
+        logBuffer.add(Map.of(
+                "id", ++logIdCounter,
+                "message", message
+        ));
+        if (logBuffer.size() > 1000) {
+            logBuffer = logBuffer.subList(logBuffer.size() - 500, logBuffer.size());
+        }
     }
 
 
@@ -165,7 +189,7 @@ public class MinecraftController {
     @PostMapping("/instance/{id}/start")
     public Map<String,String> start(
             @PathVariable String id,
-            @RequestBody(required = false) Map<String, String> body
+            @RequestBody(required = false) Map<String, Object> body
     )
             throws Exception {
 
@@ -219,12 +243,25 @@ public class MinecraftController {
 
 
 
-        String username = body != null ? body.get("username") : null;
-        String uuid = body != null ? body.get("uuid") : null;
-        String accessToken = body != null ? body.get("accessToken") : null;
-        String userType = body != null ? body.get("userType") : null;
+        String username = body != null ? String.valueOf(body.get("username")) : null;
+        String uuid = body != null ? String.valueOf(body.get("uuid")) : null;
+        String accessToken = body != null ? String.valueOf(body.get("accessToken")) : null;
+        String userType = body != null ? String.valueOf(body.get("userType")) : null;
+        Integer minMemory = null;
+        Integer maxMemory = null;
+        
+        if (body != null) {
+            Object minMemObj = body.get("minMemory");
+            if (minMemObj != null) {
+                minMemory = minMemObj instanceof Number ? ((Number) minMemObj).intValue() : Integer.parseInt(String.valueOf(minMemObj));
+            }
+            Object maxMemObj = body.get("maxMemory");
+            if (maxMemObj != null) {
+                maxMemory = maxMemObj instanceof Number ? ((Number) maxMemObj).intValue() : Integer.parseInt(String.valueOf(maxMemObj));
+            }
+        }
 
-        if (username == null || username.isEmpty()) {
+        if (username == null || username.isEmpty() || username.equals("null")) {
             username = "Player";
         }
 
@@ -240,40 +277,15 @@ public class MinecraftController {
 
         LaunchOptions options =
                 LaunchOptions.builder()
-
-                        .version(
-                                instance.getVersion()
-                        )
-
-
-                        .gameDir(
-
-                                Path.of(
-                                        instance.getPath()
-                                )
-
-                        )
-
-
+                        .version(instance.getVersion())
+                        .gameDir(Path.of(instance.getPath()))
                         .javaPath(javaPath)
-
-
-                        .minMemory(
-                                instance.getMinMemory()
-                        )
-
-
-                        .maxMemory(
-                                instance.getMaxMemory()
-                        )
-
-
+                        .minMemory(minMemory != null ? minMemory : instance.getMinMemory())
+                        .maxMemory(maxMemory != null ? maxMemory : instance.getMaxMemory())
                         .username(username)
                         .uuid(uuid)
                         .accessToken(accessToken)
                         .userType(userType)
-
-
                         .build();
 
 
@@ -286,12 +298,14 @@ public class MinecraftController {
                 options,
 
 
-                // 修复 println 方法引用歧义
                 message -> {
 
                     System.out.println(
                             message
                     );
+
+                    addLog(message);
+                    minecraftLogWebSocket.send(processId, message);
 
                 }
 
@@ -510,6 +524,86 @@ public class MinecraftController {
                 "username", username,
                 "uuid", com.xingci.mcnsl.minecraft.util.UUIDUtils.generateOfflineUUIDString(username)
         );
+    }
+
+    @GetMapping("/logs/latest")
+    public Map<String, Object> getLatestLogs(@RequestParam(defaultValue = "0") int lastId) {
+        java.util.List<Map<String, Object>> newLogs = logBuffer.stream()
+                .filter(log -> (int) log.get("id") > lastId)
+                .toList();
+        return Map.of("logs", newLogs);
+    }
+
+    @PutMapping("/instance/{id}/settings")
+    public Map<String, Object> updateSettings(
+            @PathVariable String id,
+            @RequestBody Map<String, Object> body
+    ) {
+        MinecraftInstance instance = instanceManager.get(id);
+        
+        if (instance == null) {
+            return Map.of("success", false, "message", "实例不存在");
+        }
+
+        if (body.containsKey("javaPath")) {
+            String javaPath = String.valueOf(body.get("javaPath"));
+            if (!javaPath.equals("null") && !javaPath.isEmpty()) {
+                instance.setJavaPath(javaPath);
+            }
+        }
+
+        if (body.containsKey("minMemory")) {
+            Object minMemObj = body.get("minMemory");
+            int minMemory = minMemObj instanceof Number ? ((Number) minMemObj).intValue() : Integer.parseInt(String.valueOf(minMemObj));
+            instance.setMinMemory(minMemory);
+        }
+
+        if (body.containsKey("maxMemory")) {
+            Object maxMemObj = body.get("maxMemory");
+            int maxMemory = maxMemObj instanceof Number ? ((Number) maxMemObj).intValue() : Integer.parseInt(String.valueOf(maxMemObj));
+            instance.setMaxMemory(maxMemory);
+        }
+
+        if (body.containsKey("jvmParameters")) {
+            String jvmParams = String.valueOf(body.get("jvmParameters"));
+            if (!jvmParams.equals("null")) {
+                instance.setJvmParameters(jvmParams);
+            }
+        }
+
+        if (body.containsKey("username")) {
+            String username = String.valueOf(body.get("username"));
+            if (!username.equals("null") && !username.isEmpty()) {
+                instance.setUsername(username);
+            }
+        }
+
+        instanceManager.save(instance);
+        
+        return Map.of("success", true, "message", "设置已保存");
+    }
+
+    @GetMapping("/logs/folder")
+    public Map<String, Object> openLogFolder() {
+        try {
+            Path logDir = Paths.get(System.getProperty("user.dir"), "backend", "logs");
+            if (!logDir.toFile().exists()) {
+                logDir.toFile().mkdirs();
+            }
+            
+            String os = System.getProperty("os.name").toLowerCase();
+            if (os.contains("mac")) {
+                Runtime.getRuntime().exec("open " + logDir.toAbsolutePath());
+            } else if (os.contains("win")) {
+                Runtime.getRuntime().exec("explorer " + logDir.toAbsolutePath());
+            } else {
+                Runtime.getRuntime().exec("xdg-open " + logDir.toAbsolutePath());
+            }
+            
+            return Map.of("success", true, "path", logDir.toAbsolutePath().toString());
+        } catch (Exception e) {
+            return Map.of("success", false, "error", e.getMessage());
+        }
     }
 
 

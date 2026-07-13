@@ -1074,6 +1074,7 @@ const executeDownload = async () => {
       loaderType: selectedLoader.value,
       loaderVersion: chosenLoaderVersion,
       fabricApiVersion: chosenApiVersion,
+      customName: customVersionName.value || vName,
     })
 
     downloadProgress.value = 1
@@ -1082,7 +1083,8 @@ const executeDownload = async () => {
     currentView.value = 'list'
   } catch (error) {
     console.error('发起下载任务失败:', error)
-    alert('发起下载失败，请检查网络或后端服务')
+    const errorMsg = error && error.response && error.response.data && error.response.data.message ? error.response.data.message : '发起下载失败，请检查网络或后端服务'
+    alert(errorMsg)
   }
 }
 

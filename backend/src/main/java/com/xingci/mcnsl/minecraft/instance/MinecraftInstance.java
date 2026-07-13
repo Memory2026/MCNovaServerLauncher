@@ -93,6 +93,11 @@ public class MinecraftInstance {
      */
     private int maxMemory = 4096;
 
+    /**
+     * JVM参数
+     */
+    private String jvmParameters = "-Xms1G -Xmx4G";
+
 
 
 

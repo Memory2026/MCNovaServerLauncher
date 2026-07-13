@@ -54,8 +54,10 @@ export default defineConfig({
         secure: false
       },
       '/ws': {
-        target: 'ws://localhost:8080',
-        ws: true
+        target: 'http://localhost:8080',
+        ws: true,
+        changeOrigin: true,
+        secure: false
       }
     },
     allowedHosts: [

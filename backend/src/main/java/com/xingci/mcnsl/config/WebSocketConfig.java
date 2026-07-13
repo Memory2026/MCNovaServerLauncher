@@ -118,7 +118,8 @@ public class WebSocketConfig
 
                 .addHandler(
                         minecraftLogHandler,
-                        "/ws/minecraft/log"
+                        "/ws/minecraft/log",
+                        "/ws/minecraft/logs"
                 )
 
                 .setAllowedOriginPatterns(

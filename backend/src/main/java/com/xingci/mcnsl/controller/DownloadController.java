@@ -61,6 +61,8 @@ public class DownloadController {
         private String loaderVersion;
 
         private String fabricApiVersion;
+
+        private String customName;
     }
 
     @PostMapping("/install")
@@ -113,12 +115,31 @@ public class DownloadController {
 
         }
 
+        String instanceName = request.getCustomName();
+        if (instanceName == null || instanceName.isBlank()) {
+            instanceName = versionId + " " + loaderType;
+        }
+
+        for (MinecraftInstance existing : instanceManager.list()) {
+            if (existing.getName().equals(instanceName)) {
+                return ResponseEntity.badRequest()
+                        .body(
+                                Map.of(
+                                        "code",
+                                        400,
+                                        "message",
+                                        "版本名称已存在，请使用其他名称"
+                                )
+                        );
+            }
+        }
+
         MinecraftInstance instance =
                 instanceManager.create(
-                        versionId + " " + loaderType,
+                        instanceName,
                         versionId,
                         loaderType,
-                        defaultGameDir(versionId, loaderType)
+                        defaultGameDir(instanceName)
                 );
 
         MinecraftInstallTask task =
@@ -222,13 +243,11 @@ public class DownloadController {
     }
 
     private Path defaultGameDir(
-            String versionId,
-            String loaderType
+            String instanceName
     ) {
 
         String safeName =
-                (versionId + "-" + loaderType + "-" + UUID.randomUUID())
-                        .replaceAll("[^a-zA-Z0-9._-]", "_");
+                instanceName.replaceAll("[^a-zA-Z0-9._-]", "_");
 
         Path projectDir = Path.of(System.getProperty("user.dir"));
         Path instancesDir = projectDir.resolve("instances");

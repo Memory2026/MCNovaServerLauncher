@@ -105,6 +105,11 @@ const menuItems = [
     icon: new URL('@/assets/icons/MonitoringConsole.png', import.meta.url).href,
   },
   {
+    name: '游戏实例日志',
+    path: '/app/gamelog',
+    icon: new URL('@/assets/icons/GameLog.png', import.meta.url).href,
+  },
+  {
     name: '新建服务器',
     path: '/app/newservers',
     icon: new URL('@/assets/icons/New.png', import.meta.url).href,

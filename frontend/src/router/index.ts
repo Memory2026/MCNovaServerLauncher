@@ -18,6 +18,7 @@ import Downloads from '@/views/downloads/DownloadsView.vue'
 
 import ResourceLibrary from '@/views/resourcelibrary/ResourceLibrary.vue'
 import MinecraftStart from '@/views/minecraft/MinecraftStartView.vue'
+import GameLogVies from '@/views/gamelog/GameLogVies.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -57,6 +58,14 @@ const router = createRouter({
           name: 'monitoringconsole',
 
           component: MonitoringConsole,
+        },
+
+        {
+          path: 'gamelog',
+
+          name: 'gamelog',
+
+          component: GameLogVies,
         },
 
         {
