@@ -17,6 +17,7 @@ import ToolboxView from '@/views/toolbox/ToolboxView.vue'
 import Downloads from '@/views/downloads/DownloadsView.vue'
 
 import ResourceLibrary from '@/views/resourcelibrary/ResourceLibrary.vue'
+import MinecraftStart from '@/views/minecraft/MinecraftStartView.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -100,6 +101,14 @@ const router = createRouter({
           name: 'resourcelibrary',
 
           component: ResourceLibrary,
+        },
+
+        {
+          path: 'minecraft',
+
+          name: 'minecraft-start',
+
+          component: MinecraftStart,
         },
       ],
     },

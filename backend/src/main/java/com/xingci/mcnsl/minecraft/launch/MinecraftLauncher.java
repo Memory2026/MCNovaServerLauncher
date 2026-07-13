@@ -183,7 +183,13 @@ public class MinecraftLauncher {
 
                         gameDir,
 
-                        options.getUsername()
+                        options.getUsername(),
+
+                        options.getUuid(),
+
+                        options.getAccessToken(),
+
+                        options.getUserType()
 
                 );
 

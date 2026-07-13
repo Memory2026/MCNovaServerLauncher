@@ -85,6 +85,13 @@ public class JavaCommandBuilder {
 
 
         /*
+         * macOS需要-XstartOnFirstThread来运行图形界面
+         */
+        if (System.getProperty("os.name").toLowerCase().contains("mac")) {
+            command.add("-XstartOnFirstThread");
+        }
+
+        /*
          * JVM内存
          */
         command.add(
@@ -94,7 +101,6 @@ public class JavaCommandBuilder {
                         +
                         "M"
         );
-
 
 
         command.add(
@@ -132,6 +138,8 @@ public class JavaCommandBuilder {
                             .stream()
                             .filter(argument -> !argument.contains("${classpath}"))
                             .filter(argument -> !"-cp".equals(argument))
+                            .filter(argument -> !argument.contains("sun-misc-unsafe-memory-access"))
+                            .filter(argument -> !argument.contains("--enable-native-access"))
                             .map(argument -> argument.replace(
                                     "${natives_directory}",
                                     Path.of("natives")

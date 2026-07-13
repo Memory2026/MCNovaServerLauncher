@@ -1,15 +1,14 @@
 package com.xingci.mcnsl.minecraft.launch;
 
 
-import com.xingci.mcnsl.minecraft.version.MinecraftVersion;
-
-import org.springframework.stereotype.Component;
-
-
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+
+import org.springframework.stereotype.Component;
+
+import com.xingci.mcnsl.minecraft.util.UUIDUtils;
+import com.xingci.mcnsl.minecraft.version.MinecraftVersion;
 
 
 
@@ -38,7 +37,10 @@ public class ArgumentBuilder {
     public List<String> build(
             MinecraftVersion version,
             Path gameDir,
-            String username
+            String username,
+            String uuid,
+            String accessToken,
+            String userType
     ){
 
 
@@ -154,14 +156,18 @@ public class ArgumentBuilder {
 
         /*
          * UUID
+         *
+         * 如果未指定，使用离线UUID（与PCL/HMCL一致）
          */
         args.add("--uuid");
 
-
-        args.add(
-                UUID.randomUUID()
-                        .toString()
-        );
+        if (uuid == null || uuid.isEmpty() || "00000000-0000-0000-0000-000000000000".equals(uuid)) {
+            args.add(
+                    UUIDUtils.generateOfflineUUIDString(username)
+            );
+        } else {
+            args.add(uuid);
+        }
 
 
 
@@ -172,14 +178,16 @@ public class ArgumentBuilder {
 
         /*
          * Token
-         *
-         * 离线模式暂时填0
          */
         args.add("--accessToken");
 
 
         args.add(
-                "0"
+                accessToken == null || accessToken.isEmpty()
+                        ?
+                        "0"
+                        :
+                        accessToken
         );
 
 
@@ -196,8 +204,15 @@ public class ArgumentBuilder {
 
 
         args.add(
-                "legacy"
+                userType == null || userType.isEmpty()
+                        ?
+                        "legacy"
+                        :
+                        userType
         );
+
+
+
 
 
 

@@ -146,7 +146,7 @@ const menuItems = [
   },
   {
     name: 'Minecraft',
-    path: 'app/minecraft',
+    path: '/app/minecraft',
     icon: new URL('@/assets/icons/Minecraft.png', import.meta.url).href,
   },
   {

@@ -1,21 +1,30 @@
 package com.xingci.mcnsl.controller;
 
-import com.xingci.mcnsl.manager.loader.LoaderManager;
-import com.xingci.mcnsl.minecraft.download.MinecraftInstallTask;
-import com.xingci.mcnsl.minecraft.instance.MinecraftInstance;
-import com.xingci.mcnsl.minecraft.instance.MinecraftInstanceManager;
-import com.xingci.mcnsl.minecraft.install.MinecraftInstallManager;
-import com.xingci.mcnsl.model.LoaderVersionInfo;
-import com.xingci.mcnsl.service.LoaderVersionService;
-import lombok.Getter;
-import lombok.Setter;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.xingci.mcnsl.manager.loader.LoaderManager;
+import com.xingci.mcnsl.minecraft.download.MinecraftInstallTask;
+import com.xingci.mcnsl.minecraft.install.MinecraftInstallManager;
+import com.xingci.mcnsl.minecraft.instance.MinecraftInstance;
+import com.xingci.mcnsl.minecraft.instance.MinecraftInstanceManager;
+import com.xingci.mcnsl.model.LoaderVersionInfo;
+import com.xingci.mcnsl.service.LoaderVersionService;
+
+import lombok.Getter;
+import lombok.Setter;
 
 @RestController
 @RequestMapping("/api/download")
@@ -115,7 +124,8 @@ public class DownloadController {
         MinecraftInstallTask task =
                 installManager.installInstance(
                         instance.getId(),
-                        request.getLoaderVersion()
+                        request.getLoaderVersion(),
+                        request.getFabricApiVersion()
                 );
 
         return ResponseEntity.ok(
@@ -185,6 +195,20 @@ public class DownloadController {
         );
     }
 
+    @GetMapping("/tasks")
+    public ResponseEntity<?> getDownloadTasks() {
+        return ResponseEntity.ok(installManager.getTasks().values());
+    }
+
+    @GetMapping("/tasks/{taskId}")
+    public ResponseEntity<?> getDownloadTask(@PathVariable String taskId) {
+        MinecraftInstallTask task = installManager.getTask(taskId);
+        if (task == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(task);
+    }
+
     private boolean isLoaderVersionUsable(
             String version
     ) {
@@ -206,12 +230,10 @@ public class DownloadController {
                 (versionId + "-" + loaderType + "-" + UUID.randomUUID())
                         .replaceAll("[^a-zA-Z0-9._-]", "_");
 
-        return Path.of(
-                System.getProperty("user.home"),
-                ".mcnsl",
-                "instances",
-                safeName
-        );
+        Path projectDir = Path.of(System.getProperty("user.dir"));
+        Path instancesDir = projectDir.resolve("instances");
+
+        return instancesDir.resolve(safeName);
 
     }
 

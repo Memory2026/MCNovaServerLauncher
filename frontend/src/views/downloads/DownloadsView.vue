@@ -21,19 +21,25 @@
           </div>
 
           <div class="flex items-center gap-3">
-            <button
-              class="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-sm font-medium shadow-sm transition-colors"
-            >
-              <span>📁</span> 添加已有文件夹
-            </button>
-            <button
-              @click="fetchVersions"
-              :disabled="loading"
-              class="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-sm font-medium shadow-sm transition-colors disabled:opacity-50"
-            >
-              <span>🔄</span> {{ loading ? '同步中...' : '刷新' }}
-            </button>
-          </div>
+              <button
+                class="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-sm font-medium shadow-sm transition-colors"
+              >
+                <span>📁</span> 添加已有文件夹
+              </button>
+              <button
+                @click="fetchVersions"
+                :disabled="loading"
+                class="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-sm font-medium shadow-sm transition-colors disabled:opacity-50"
+              >
+                <span>🔄</span> {{ loading ? '同步中...' : '刷新' }}
+              </button>
+              <button
+                @click="openDownloadManager"
+                class="flex items-center gap-1.5 px-4 py-2 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-600 rounded-xl text-sm font-medium shadow-sm transition-colors"
+              >
+                <span>⬇️</span> 下载管理
+              </button>
+            </div>
         </div>
       </header>
 
@@ -722,6 +728,164 @@
         </button>
       </div>
     </template>
+
+    <div v-if="showDownloadManager" class="fixed inset-0 bg-black/40 backdrop-blur-md z-50 flex items-center justify-center">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 overflow-hidden">
+        <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+            </div>
+            <h2 class="text-xl font-bold text-gray-900">下载管理</h2>
+          </div>
+          <button
+            @click="showDownloadManager = false"
+            class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-lg transition-all"
+          >
+            <span class="text-lg">×</span>
+          </button>
+        </div>
+
+        <div class="flex h-[550px]">
+          <div class="w-72 bg-gradient-to-b from-gray-50 to-gray-0 border-r border-gray-100 p-5">
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-4">
+              <div class="text-xs font-medium text-gray-500 mb-2">总进度</div>
+              <div class="text-3xl font-bold text-zinc-900">{{ totalProgress.toFixed(1) }}<span class="text-base font-normal text-gray-400">%</span></div>
+              <div class="mt-3 h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500" :style="{ width: totalProgress + '%' }"></div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-4">
+              <div class="flex items-center justify-between mb-3">
+                <div class="text-xs font-medium text-gray-500">下载速度</div>
+                <div class="text-base font-semibold text-zinc-800">{{ formatSpeed(totalSpeed) }}</div>
+              </div>
+              <div class="flex items-center justify-between mb-3">
+                <div class="text-xs font-medium text-gray-500">剩余文件</div>
+                <div class="text-base font-semibold text-zinc-800">{{ formatFileSize(remainingBytes) }}</div>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="text-xs font-medium text-gray-500">运行任务</div>
+                <div class="text-base font-semibold text-zinc-800">{{ runningTasksCount }}</div>
+              </div>
+            </div>
+
+            <div class="bg-blue-50 rounded-xl border border-blue-100 p-4">
+              <div class="text-xs font-medium text-blue-600 mb-2">提示</div>
+              <div class="text-xs text-blue-500 leading-relaxed">
+                下载过程中请保持网络稳定，大版本可能需要较长时间。
+              </div>
+            </div>
+          </div>
+
+          <div class="flex-1 p-5 overflow-y-auto">
+            <div v-if="downloadTasks.length === 0" class="h-full flex flex-col items-center justify-center text-gray-400">
+              <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-5">
+                <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+              </div>
+              <div class="text-lg font-medium text-gray-500">暂无下载任务</div>
+              <div class="text-sm text-gray-400 mt-1">在版本列表中选择版本开始下载</div>
+            </div>
+
+            <div v-else class="space-y-4">
+              <div
+                v-for="task in downloadTasks"
+                :key="task.id"
+                class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+              >
+                <div class="flex justify-between items-center px-5 py-4 bg-gray-50/50">
+                  <div class="flex items-center gap-3">
+                    <div
+                      :class="[
+                        'w-3 h-3 rounded-full',
+                        task.status === 'RUNNING' ? 'bg-blue-500 animate-pulse' :
+                        task.status === 'SUCCESS' ? 'bg-green-500' :
+                        task.status === 'FAILED' ? 'bg-red-500' : 'bg-gray-300'
+                      ]"
+                    ></div>
+                    <span class="text-base font-semibold text-gray-800">{{ task.version }} {{ getLoaderName(task) }}</span>
+                  </div>
+                  <div class="flex items-center gap-4">
+                    <span class="text-sm font-medium text-gray-600">{{ task.progress.toFixed(1) }}%</span>
+                    <div class="flex items-center gap-2">
+                      <button
+                        v-if="task.status === 'RUNNING'"
+                        @click="pauseTask(task)"
+                        class="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                      >暂停</button>
+                      <button
+                        v-if="task.status === 'FAILED' || task.status === 'CANCELLED'"
+                        @click="retryTask(task)"
+                        class="px-3 py-1.5 text-xs font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+                      >重试</button>
+                      <button
+                        @click="removeTask(task)"
+                        class="px-3 py-1.5 text-xs font-medium text-gray-500 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                      >删除</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="px-5 py-4">
+                  <div class="h-2.5 bg-gray-100 rounded-full overflow-hidden mb-4">
+                    <div
+                      :class="[
+                        'h-full rounded-full transition-all duration-300',
+                        task.status === 'RUNNING' ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
+                        task.status === 'SUCCESS' ? 'bg-green-500' :
+                        task.status === 'FAILED' ? 'bg-red-500' : 'bg-gray-300'
+                      ]"
+                      :style="{ width: task.progress + '%' }"
+                    ></div>
+                  </div>
+
+                  <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-600">{{ task.step || '等待开始' }}</span>
+                    <span v-if="task.currentFile" class="text-gray-400 text-xs">当前: {{ task.currentFile }}</span>
+                  </div>
+
+                  <div v-if="task.error" class="mt-3 text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">
+                    <div class="font-medium mb-1">下载失败</div>
+                    {{ task.error }}
+                  </div>
+                </div>
+
+                <div class="px-5 py-3 bg-gray-50 border-t border-gray-100">
+                  <div class="grid grid-cols-4 gap-4 text-xs">
+                    <div>
+                      <div class="text-gray-400 mb-1">已下载</div>
+                      <div class="font-medium text-gray-700">{{ formatFileSize(task.downloadedBytes || 0) }}</div>
+                    </div>
+                    <div>
+                      <div class="text-gray-400 mb-1">总大小</div>
+                      <div class="font-medium text-gray-700">{{ formatFileSize(task.totalBytes || 0) }}</div>
+                    </div>
+                    <div>
+                      <div class="text-gray-400 mb-1">速度</div>
+                      <div class="font-medium text-gray-700">{{ formatSpeed(task.speed || 0) }}</div>
+                    </div>
+                    <div>
+                      <div class="text-gray-400 mb-1">状态</div>
+                      <div :class="[
+                        'font-medium',
+                        task.status === 'RUNNING' ? 'text-blue-600' :
+                        task.status === 'SUCCESS' ? 'text-green-600' :
+                        task.status === 'FAILED' ? 'text-red-600' : 'text-gray-500'
+                      ]">{{ getStatusText(task.status) }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -763,6 +927,9 @@ const downloadProgress = ref(0)
 const downloadStep = ref('')
 const currentTaskId = ref('')
 let ws = null
+
+const showDownloadManager = ref(false)
+const downloadTasks = ref([])
 
 // ================== 图标路径获取（已修复：采用当前文件往上两级的相对路径） ==================
 const getStaticIcon = (fileName) => {
@@ -1043,25 +1210,31 @@ const initWebSocket = () => {
   ws.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data)
-      if (currentTaskId.value && data.id && data.id !== currentTaskId.value) {
-        return
-      }
       if (data && typeof data.progress === 'number') {
-        downloadProgress.value = data.progress
-        downloadStep.value = data.step || data.status || ''
-        if (data.progress >= 100) {
-          setTimeout(() => {
+        if (!currentTaskId.value || data.id === currentTaskId.value) {
+          downloadProgress.value = data.progress
+          downloadStep.value = data.step || data.status || ''
+          if (data.progress >= 100) {
+            setTimeout(() => {
+              downloadProgress.value = 0
+              downloadStep.value = ''
+              currentTaskId.value = ''
+              fetchVersions()
+            }, 1500)
+          }
+          if (data.status === 'FAILED') {
+            alert(data.error || '下载失败')
             downloadProgress.value = 0
             downloadStep.value = ''
             currentTaskId.value = ''
-            fetchVersions()
-          }, 1500)
+          }
         }
-        if (data.status === 'FAILED') {
-          alert(data.error || '下载失败')
-          downloadProgress.value = 0
-          downloadStep.value = ''
-          currentTaskId.value = ''
+
+        const existingIndex = downloadTasks.value.findIndex(t => t.id === data.id)
+        if (existingIndex >= 0) {
+          downloadTasks.value[existingIndex] = { ...downloadTasks.value[existingIndex], ...data }
+        } else {
+          downloadTasks.value.push(data)
         }
       }
     } catch (e) {
@@ -1082,6 +1255,173 @@ const initWebSocket = () => {
   ws.onclose = () => {
     setTimeout(initWebSocket, 5000)
   }
+}
+
+const openDownloadManager = async () => {
+  showDownloadManager.value = true
+  await fetchDownloadTasks()
+}
+
+const fetchDownloadTasks = async () => {
+  try {
+    const response = await axios.get(`${API_BASE}/download/tasks`)
+    downloadTasks.value = Array.isArray(response.data) ? response.data : []
+  } catch (error) {
+    console.error('获取下载任务失败:', error)
+    downloadTasks.value = []
+  }
+}
+
+const totalProgress = computed(() => {
+  if (downloadTasks.value.length === 0) return 0
+  const runningTasks = downloadTasks.value.filter(t => t.status === 'RUNNING')
+  if (runningTasks.length === 0) return 0
+  return runningTasks.reduce((sum, t) => sum + (t.progress || 0), 0) / runningTasks.length
+})
+
+const totalSpeed = computed(() => {
+  return downloadTasks.value.reduce((sum, t) => sum + (t.speed || 0), 0)
+})
+
+const remainingFiles = computed(() => {
+  return downloadTasks.value.reduce((sum, t) => {
+    const remaining = Math.max(0, t.totalBytes - t.downloadedBytes)
+    return sum + remaining
+  }, 0)
+})
+
+const remainingBytes = computed(() => {
+  return downloadTasks.value.reduce((sum, t) => {
+    const remaining = Math.max(0, t.totalBytes - t.downloadedBytes)
+    return sum + remaining
+  }, 0)
+})
+
+const runningTasksCount = computed(() => {
+  return downloadTasks.value.filter(t => t.status === 'RUNNING').length
+})
+
+const formatSpeed = (bytesPerSecond) => {
+  if (bytesPerSecond < 1024) return bytesPerSecond + ' B/s'
+  if (bytesPerSecond < 1024 * 1024) return (bytesPerSecond / 1024).toFixed(1) + ' KB/s'
+  return (bytesPerSecond / (1024 * 1024)).toFixed(1) + ' MB/s'
+}
+
+const formatFileSize = (bytes) => {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+  return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB'
+}
+
+const getLoaderName = (task) => {
+  const step = task.step || ''
+  if (step.includes('Forge')) return '(Forge)'
+  if (step.includes('NeoForge')) return '(NeoForge)'
+  if (step.includes('Fabric')) return '(Fabric)'
+  if (step.includes('OptiFine')) return '(OptiFine)'
+  return '(原版)'
+}
+
+const getStatusText = (status) => {
+  const map = {
+    'RUNNING': '下载中',
+    'SUCCESS': '已完成',
+    'FAILED': '失败',
+    'CANCELLED': '已取消',
+    'WAITING': '等待中',
+    'PAUSED': '已暂停'
+  }
+  return map[status] || status
+}
+
+const pauseTask = (task) => {
+  alert('暂停功能开发中')
+}
+
+const retryTask = (task) => {
+  alert('重试功能开发中')
+}
+
+const removeTask = (task) => {
+  const index = downloadTasks.value.findIndex(t => t.id === task.id)
+  if (index > -1) {
+    downloadTasks.value.splice(index, 1)
+  }
+}
+
+const getTaskSteps = (task) => {
+  const stepMapping = {
+    '下载版本json': { name: '下载原版json文件', basePercent: 0 },
+    '下载客户端jar': { name: '下载原版支持库文件', basePercent: 15 },
+    '下载Libraries': { name: '下载原版资源文件', basePercent: 30 },
+    '安装Forge': { name: '安装游戏', basePercent: 60 },
+    '安装NeoForge': { name: '安装游戏', basePercent: 60 },
+    '安装Fabric': { name: '安装游戏', basePercent: 60 },
+    '下载Assets': { name: '下载资源文件', basePercent: 45 },
+    '下载Fabric API': { name: '下载Fabric API', basePercent: 80 },
+    '完成': { name: '安装完成', basePercent: 100 },
+  }
+
+  const steps = [
+    { name: '下载原版json文件', status: 'pending', percent: null },
+    { name: '下载原版支持库文件', status: 'pending', percent: null },
+    { name: '下载原版资源文件', status: 'pending', percent: null },
+    { name: '安装游戏', status: 'pending', percent: null },
+  ]
+
+  if (!task.step) {
+    if (task.status === 'SUCCESS') {
+      steps.forEach(s => s.status = 'completed')
+    } else if (task.status === 'FAILED') {
+      steps.forEach(s => s.status = 'failed')
+    }
+    return steps
+  }
+
+  const currentStepKey = Object.keys(stepMapping).find(key => task.step.includes(key))
+  const currentStepInfo = currentStepKey ? stepMapping[currentStepKey] : null
+
+  steps.forEach((step, index) => {
+    let stepPercent = null
+    
+    if (currentStepInfo) {
+      if (step.name === currentStepInfo.name) {
+        step.status = 'current'
+        const progress = task.progress || 0
+        const base = currentStepInfo.basePercent
+        let nextBase = 100
+        if (index < steps.length - 1) {
+          const nextStepInfo = Object.values(stepMapping).find(s => s.name === steps[index + 1].name)
+          if (nextStepInfo) nextBase = nextStepInfo.basePercent
+        }
+        stepPercent = ((progress - base) / (nextBase - base) * 100).toFixed(0)
+      } else if (step.name === '下载原版json文件' && currentStepInfo.basePercent > 0) {
+        step.status = 'completed'
+        stepPercent = 100
+      } else if (step.name === '下载原版支持库文件' && currentStepInfo.basePercent > 15) {
+        step.status = 'completed'
+        stepPercent = 100
+      } else if (step.name === '下载原版资源文件' && currentStepInfo.basePercent > 30) {
+        step.status = 'completed'
+        stepPercent = 100
+      } else if (step.name === '安装游戏' && currentStepInfo.basePercent >= 60 && task.progress >= 100) {
+        step.status = 'completed'
+        stepPercent = 100
+      }
+    }
+
+    if (task.status === 'SUCCESS') {
+      step.status = 'completed'
+      stepPercent = 100
+    } else if (task.status === 'FAILED') {
+      if (step.status === 'current') {
+        step.status = 'failed'
+      }
+    }
+  })
+
+  return steps
 }
 
 onMounted(() => {
