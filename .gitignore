@@ -107,3 +107,11 @@ runtime/
 *.tmp
 *.temp
 *.swp
+
+###################################
+# Runtime generated files
+###################################
+
+backend/gradle-8.10.1/
+backend/instances/
+backend/natives/
