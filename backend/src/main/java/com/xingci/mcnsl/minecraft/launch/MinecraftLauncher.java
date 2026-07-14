@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Consumer;
@@ -441,16 +442,16 @@ public class MinecraftLauncher {
 
                                         process.getInputStream()
 
-                                )
+                                ),
+
+                                1
 
                         )
 
         ){
 
 
-
             String line;
-
 
 
             while(
@@ -468,7 +469,6 @@ public class MinecraftLauncher {
 
 
             }
-
 
 
         }

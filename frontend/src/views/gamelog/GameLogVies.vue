@@ -110,7 +110,7 @@ function startPolling() {
       .catch(error => {
         console.error('轮询日志失败:', error)
       })
-  }, 1000)
+  }, 200)
 }
 
 function clearLogs() {
