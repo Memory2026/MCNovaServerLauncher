@@ -309,7 +309,16 @@
                     <div class="text-xl font-bold text-gray-800">{{ getSelectedVersion()?.instanceName }}</div>
                     <div class="text-sm text-gray-500 mt-1">Minecraft {{ getSelectedVersion()?.version }}</div>
                     <div class="flex gap-2 mt-3">
-                      <span class="px-2 py-0.5 text-xs font-medium text-green-700 bg-green-100 rounded">发布版</span>
+                      <span class="px-2 py-0.5 text-xs font-medium text-green-700 bg-green-100 rounded flex items-center gap-1.5">
+                      <svg class="w-3 h-3" viewBox="0 0 16 16" fill="none">
+                        <rect x="1" y="1" width="14" height="14" rx="1" fill="#729662"/>
+                        <rect x="2" y="2" width="6" height="6" fill="#567d46"/>
+                        <rect x="8" y="2" width="6" height="6" fill="#729662"/>
+                        <rect x="2" y="8" width="6" height="6" fill="#729662"/>
+                        <rect x="8" y="8" width="6" height="6" fill="#567d46"/>
+                      </svg>
+                      发布版
+                    </span>
                     </div>
                   </div>
                 </div>
@@ -439,7 +448,16 @@
                     <div class="text-xl font-bold text-gray-800">{{ getSelectedVersion()?.instanceName }}</div>
                     <div class="text-sm text-gray-500 mt-1">Minecraft {{ getSelectedVersion()?.version }}</div>
                     <div class="flex gap-2 mt-3">
-                      <span class="px-2 py-0.5 text-xs font-medium text-green-700 bg-green-100 rounded">发布版</span>
+                      <span class="px-2 py-0.5 text-xs font-medium text-green-700 bg-green-100 rounded flex items-center gap-1.5">
+                      <svg class="w-3 h-3" viewBox="0 0 16 16" fill="none">
+                        <rect x="1" y="1" width="14" height="14" rx="1" fill="#729662"/>
+                        <rect x="2" y="2" width="6" height="6" fill="#567d46"/>
+                        <rect x="8" y="2" width="6" height="6" fill="#729662"/>
+                        <rect x="2" y="8" width="6" height="6" fill="#729662"/>
+                        <rect x="8" y="8" width="6" height="6" fill="#567d46"/>
+                      </svg>
+                      发布版
+                    </span>
                     </div>
                   </div>
                 </div>
