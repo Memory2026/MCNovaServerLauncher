@@ -21,7 +21,7 @@ public class CurseForgeApi {
     private static final Logger logger = LoggerFactory.getLogger(CurseForgeApi.class);
 
     private static final String BASE = "https://api.curseforge.com/v1";
-    private static final String API_KEY = "cfc_pat_5afea766fc7e001c8fabccfd$2a$10$GOiS5BaQtDDr0EdXDfe3m.mKM9niidgsfDm.Kisp7wURqCxe1hAfC";
+    private static final String API_KEY = "cfc_pat_e6c7723aff2f66989f6b1a410b0aaa110fddb980f4929e96a7f996053c6b6099-$2a$10$GOiS5BaQtDDr0EdXDfe3m.mKM9niidgsfDm.Kisp7wURqCxe1hAfC";
 
     private final ObjectMapper mapper = new ObjectMapper();
 
